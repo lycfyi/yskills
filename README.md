@@ -22,6 +22,11 @@ Rules baked into the prompt: only trust actual tool-call records (a step that wa
 but never executed didn't happen); never fabricate results for anything still running; never
 re-ask a decision that was already made.
 
+It also works in a **fresh context with zero history**: point it at a worktree or branch
+(`/whats-next` in a new session, or "这个 worktree 做到哪了") and it rebuilds the state from
+git evidence instead — uncommitted diffs, branch commits vs. base, handoff/task docs — and
+the verdict becomes "can this worktree be wrapped up (merged/PR'd/deleted)?"
+
 ## human-context-rebuild
 
 The companion skill: a pure recap, no decisions. Type `/human-context-rebuild` (or just say

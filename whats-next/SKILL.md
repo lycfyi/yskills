@@ -1,6 +1,6 @@
 ---
 name: whats-next
-description: Re-orient the user after they return to a session and let them decide the next step by answering lightweight structured questions (Yes/No, A/B/C/D via AskUserQuestion) instead of facing a blank prompt. Trigger when the user invokes /whats-next, or asks "接下来做什么", "下一步是什么", "我该做什么", "what's next", "what should we do next", "帮我决定下一步", or returns after a long gap and wants to resume work with minimal typing. NOT for pure recap with no decision needed (that is a recap request — answer it directly or use a context-rebuild skill if available), and NOT for questions about a specific file or piece of code.
+description: Re-orient the user after they return to a session — or after they open a FRESH context pointed at a worktree/branch — and let them decide the next step by answering lightweight structured questions (Yes/No, A/B/C/D via AskUserQuestion) instead of facing a blank prompt. Trigger when the user invokes /whats-next (optionally naming a worktree, branch, or repo path), or asks "接下来做什么", "下一步是什么", "我该做什么", "这个 worktree/分支做到哪了、下一步呢", "what's next", "what should we do next", "帮我决定下一步", or returns after a long gap and wants to resume work with minimal typing. Works with zero conversation history: state is then rebuilt from git evidence (diffs, branch commits, uncommitted changes) and handoff/task docs. NOT for pure recap with no decision needed (that is a recap request — answer it directly or use a context-rebuild skill if available), and NOT for questions about a specific file or piece of code.
 ---
 
 # What's Next
@@ -13,9 +13,34 @@ Match the language of the conversation.
 
 ## Workflow
 
+### 0. Pick the evidence source
+
+Two invocation shapes, same downstream flow:
+
+- **Warm session** — there is real conversation history: the conversation IS the record.
+  Go straight to step 1.
+- **Cold start / named target** — a fresh context, or the user points at a worktree,
+  branch, or repo path ("这个 worktree 的 diffs", "新分支做到哪了"). There is no
+  conversation to mine; rebuild state from repo evidence instead:
+  - Resolve the target first. If ambiguous, `git worktree list` / branch list. Don't
+    infer the base/target branch from branch names alone — check the remote HEAD or
+    whatever tool of record the setup has. One clarifying question max.
+  - Read, in rough priority order: uncommitted changes (`git status` + diff of the
+    working tree), branch commits not on the base branch (`git log base..HEAD`
+    with `--stat`), the actual diff vs. base when commit messages aren't enough, any
+    task/handoff doc that scopes this work (a handoff doc in the repo, the PR
+    description, an issue-tracker ticket named in commits), and recent-commit
+    trailers that record acceptance/deploy state.
+  - The mapping: committed-and-merged → DONE; committed on branch but not merged →
+    done-but-not-landed; uncommitted diff → in flight; task-doc items with no
+    corresponding diff → planned, not started. A step described in a doc with no code
+    evidence did NOT happen.
+  - Don't read every file end-to-end — read enough to name the milestones and the
+    fork points, and say when a judgment rests on commit messages alone.
+
 ### 1. Reconstruct state (silently)
 
-From the conversation so far, determine:
+From the evidence source chosen above, determine:
 
 - The overall goal of this session, in one sentence.
 - What is already DONE and verified (committed? deployed? approved?).
@@ -99,5 +124,11 @@ ask again — same lightweight format.
 - **The real next step needs substantive user input** (e.g. wording only they can write,
   a business judgment with no good default): don't force fake options. Ask the one
   open question directly and say why it can't be optioned.
-- **Fresh session, no meaningful context yet**: say there's nothing to resume here and
-  ask what to start on — offering candidates from memory/project state if any exist.
+- **Fresh session, no meaningful context, and no target named**: say there's nothing to
+  resume here and ask what to start on — offering candidates from memory/project state
+  if any exist. (If a worktree/branch WAS named, that's a cold start — go through
+  step 0, not this case.)
+- **Cold start on a worktree**: the close-session verdict becomes a close-WORKTREE
+  verdict — can this worktree be wrapped up (merged/PR'd/deleted)? Judge by: uncommitted
+  work present? branch merged to its target? task-doc acceptance recorded? Offer the
+  cheapest path to closable ("把这两个未提交文件 commit 掉就能开 PR") as an option.
