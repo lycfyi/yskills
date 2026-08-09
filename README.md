@@ -1,4 +1,4 @@
-# yskill
+# yskills
 
 Claude Code skills I actually use, open-sourced one at a time.
 
