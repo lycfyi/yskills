@@ -14,7 +14,9 @@
 
 set -euo pipefail
 
-REPO_URL="https://github.com/lycfyi/yskills.git"
+# Overridable so the piped-install path can be tested against a local clone:
+#   cat install.sh | YSKILLS_REPO_URL=/path/to/clone bash -s -- --dir /tmp/x
+REPO_URL="${YSKILLS_REPO_URL:-https://github.com/lycfyi/yskills.git}"
 AGENT="claude"
 CUSTOM_DIR=""
 MODE="copy"
