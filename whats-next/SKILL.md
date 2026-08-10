@@ -1,6 +1,19 @@
 ---
 name: whats-next
-description: Re-orient the user after they return to a session — or after they open a FRESH context pointed at a worktree/branch — and let them decide the next step by answering lightweight structured questions (Yes/No, A/B/C/D via AskUserQuestion) instead of facing a blank prompt. Trigger when the user invokes /whats-next (optionally naming a worktree, branch, or repo path), or asks "接下来做什么", "下一步是什么", "我该做什么", "这个 worktree/分支做到哪了、下一步呢", "what's next", "what should we do next", "帮我决定下一步", or returns after a long gap and wants to resume work with minimal typing. Works with zero conversation history: state is then rebuilt from git evidence (diffs, branch commits, uncommitted changes) and handoff/task docs. NOT for pure recap with no decision needed (that is a recap request — answer it directly or use a context-rebuild skill if available), and NOT for questions about a specific file or piece of code.
+description: >-
+  Re-orient the user after they return to a session — or after they open a FRESH
+  context pointed at a worktree/branch — and let them decide the next step by
+  answering lightweight structured questions (Yes/No, A/B/C/D via
+  AskUserQuestion) instead of facing a blank prompt. Trigger when the user invokes
+  /whats-next (optionally naming a worktree, branch, or repo path), or asks
+  "接下来做什么", "下一步是什么", "我该做什么", "这个 worktree/分支做到哪了、下一步呢",
+  "what's next", "what should we do next", "帮我决定下一步", or returns after a
+  long gap and wants to resume work with minimal typing. Works with zero
+  conversation history: state is then rebuilt from git evidence (diffs, branch
+  commits, uncommitted changes) and handoff/task docs. NOT for pure recap with no
+  decision needed (that is a recap request — answer it directly or use a
+  context-rebuild skill if available), and NOT for questions about a specific
+  file or piece of code.
 ---
 
 # What's Next
