@@ -1,0 +1,31 @@
+{
+  "name": "yskills",
+  "description": "Claude Code / Agent Skills that re-orient you when you come back to a session",
+  "owner": {
+    "name": "lycfyi",
+    "url": "https://github.com/lycfyi"
+  },
+  "plugins": [
+    {
+      "name": "yskills",
+      "source": "./",
+      "description": "Session re-orientation skills: /whats-next and /human-context-rebuild",
+      "version": "0.1.0",
+      "author": {
+        "name": "lycfyi",
+        "url": "https://github.com/lycfyi"
+      },
+      "homepage": "https://github.com/lycfyi/yskills",
+      "repository": "https://github.com/lycfyi/yskills",
+      "license": "MIT",
+      "category": "productivity",
+      "tags": [
+        "skills",
+        "session",
+        "context",
+        "recap",
+        "worktree"
+      ]
+    }
+  ]
+}

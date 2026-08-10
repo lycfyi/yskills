@@ -1,0 +1,22 @@
+{
+  "name": "yskills",
+  "displayName": "yskills",
+  "description": "Session re-orientation skills for agents you leave and come back to: /whats-next and /human-context-rebuild",
+  "version": "0.1.0",
+  "author": {
+    "name": "lycfyi",
+    "url": "https://github.com/lycfyi"
+  },
+  "homepage": "https://github.com/lycfyi/yskills",
+  "repository": "https://github.com/lycfyi/yskills",
+  "license": "MIT",
+  "keywords": [
+    "skills",
+    "session",
+    "context",
+    "recap",
+    "worktree",
+    "productivity"
+  ],
+  "skills": "./skills"
+}
