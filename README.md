@@ -1,11 +1,150 @@
 # yskills
 
-Claude Code skills I actually use, open-sourced one at a time.
+Agent Skills I actually use, open-sourced one at a time.
 
-## whats-next
+Both skills solve the same problem from different angles: **you run many agent sessions in
+parallel, you come back hours later, and every one of them greets you with a blank prompt.**
 
-You run many Claude Code sessions in parallel. You come back after half a day and can't
-remember where any of them stands — and every session greets you with a blank prompt.
+They follow the [Agent Skills](https://agentskills.io) open format, so they work in Claude
+Code, Claude.ai, Codex, Cursor, OpenCode, Goose, and any other skills-compatible agent.
+
+| Skill | Command | What it does |
+| --- | --- | --- |
+| [`whats-next`](skills/whats-next/SKILL.md) | `/whats-next` | Tells you whether the session can be closed, recaps it in 3–5 lines, then hands you the next step as clickable options |
+| [`human-context-rebuild`](skills/human-context-rebuild/SKILL.md) | `/human-context-rebuild` | Pure recap, no decisions — a sub-30-second re-orientation in a fixed 5-field format |
+
+**Which one do I want?** `human-context-rebuild` tells you where you are; `whats-next` tells
+you where you are *and* hands you the next move as clickable options (plus a verdict on
+whether the session can simply be closed).
+
+---
+
+## Install
+
+### Claude Code — plugin (recommended)
+
+Installs both skills, keeps them updatable, and survives a machine rebuild.
+
+```
+/plugin marketplace add lycfyi/yskills
+/plugin install yskills@yskills
+```
+
+Or without entering the REPL:
+
+```bash
+claude plugin marketplace add lycfyi/yskills
+claude plugin install yskills@yskills
+```
+
+Plugin skills are namespaced by the plugin, so invoke them as `/yskills:whats-next` and
+`/yskills:human-context-rebuild`. Claude also triggers them automatically when you say things
+like "我们到哪一步了" or "what should I do next".
+
+Update later with `/plugin marketplace update yskills` then `/plugin update yskills`.
+
+### Claude Code — plain files
+
+If you'd rather not use plugins, drop the skill folders in and get the shorter
+`/whats-next` command:
+
+```bash
+curl -fsSL https://raw.githubusercontent.com/lycfyi/yskills/main/install.sh | bash
+```
+
+That clones to a temp dir and copies both skills into `~/.claude/skills/`. From a clone:
+
+```bash
+git clone https://github.com/lycfyi/yskills.git && cd yskills
+./install.sh                      # both skills -> ~/.claude/skills/
+./install.sh whats-next           # just one
+./install.sh --link               # symlink instead of copy, so edits track the repo
+```
+
+Or by hand — a skill is just a folder with a `SKILL.md`:
+
+```bash
+mkdir -p ~/.claude/skills
+cp -r skills/whats-next skills/human-context-rebuild ~/.claude/skills/
+```
+
+### Codex
+
+Codex reads skills from `~/.agents/skills` (user level) and `.agents/skills` (repo level):
+
+```bash
+curl -fsSL https://raw.githubusercontent.com/lycfyi/yskills/main/install.sh | bash -s -- --agent codex
+```
+
+From a clone, `./install.sh --agent codex`, or manually:
+
+```bash
+mkdir -p ~/.agents/skills
+cp -r skills/* ~/.agents/skills/
+```
+
+Restart Codex so it picks up the new skill metadata.
+
+### Claude.ai, Claude Desktop, Cowork, and cloud sessions
+
+These don't read `~/.claude/skills` on your machine — you upload the skill to your account
+instead. Build the zips:
+
+```bash
+scripts/package.sh
+# dist/whats-next.zip
+# dist/human-context-rebuild.zip
+```
+
+Then upload each `.zip` under **Settings → Capabilities → Skills** on
+[claude.ai](https://claude.ai) (or **Customize** in the Claude Desktop sidebar). Skills
+enabled on your account are what Cowork and scheduled cloud sessions load at session start.
+
+Both skills stick to the six spec-allowed frontmatter fields, so they upload without the
+`Unexpected key(s) in SKILL.md frontmatter` error that Claude Code-only fields cause.
+
+### Cursor, OpenCode, Goose, and other agents
+
+```bash
+./install.sh --agent cursor        # ~/.cursor/skills
+./install.sh --agent opencode      # ~/.config/opencode/skills
+./install.sh --agent goose         # ~/.config/goose/skills
+./install.sh --agent all           # every agent already present on this machine
+./install.sh --dir /some/other/skills-dir
+```
+
+For anything not in that list, check where your agent looks for skills and point `--dir` at
+it. The skill folders themselves are portable and need no changes.
+
+### Project-scoped install
+
+To make the skills available to everyone working in one repo (and to Claude Code cloud
+sessions, which load skills committed to the cloned repository):
+
+```bash
+./install.sh --agent claude-project   # ./.claude/skills
+./install.sh --agent codex-project    # ./.agents/skills
+```
+
+Then commit the result.
+
+### Uninstall
+
+```bash
+rm -rf ~/.claude/skills/whats-next ~/.claude/skills/human-context-rebuild
+# or, if installed as a plugin:
+claude plugin uninstall yskills@yskills
+claude plugin marketplace remove yskills
+```
+
+---
+
+## The skills
+
+### `whats-next`
+
+You run many sessions in parallel. You come back after half a day and can't remember where
+any of them stands — and every session greets you with a blank prompt.
 
 Type `/whats-next` and the session re-orients you instead:
 
@@ -27,7 +166,7 @@ It also works in a **fresh context with zero history**: point it at a worktree o
 git evidence instead — uncommitted diffs, branch commits vs. base, handoff/task docs — and
 the verdict becomes "can this worktree be wrapped up (merged/PR'd/deleted)?"
 
-## human-context-rebuild
+### `human-context-rebuild`
 
 The companion skill: a pure recap, no decisions. Type `/human-context-rebuild` (or just say
 "remind me what we're doing" / "我们到哪一步了") and get a sub-30-second re-orientation:
@@ -44,18 +183,41 @@ Under 150 words, anchored on file paths, branch names, and confirmed decisions �
 your brain latches onto faster than prose. Bilingual by design: it matches whatever language
 the session is running in.
 
-**Which one do I want?** `human-context-rebuild` tells you where you are;
-`whats-next` tells you where you are *and* hands you the next move as clickable options
-(plus a verdict on whether the session can simply be closed).
+---
 
-## Install
+## Repo layout
 
-```bash
-mkdir -p ~/.claude/skills
-cp -r whats-next human-context-rebuild ~/.claude/skills/
+```
+yskills/
+├── skills/                        # the skills themselves — portable, copy anywhere
+│   ├── whats-next/SKILL.md
+│   └── human-context-rebuild/SKILL.md
+├── .claude-plugin/
+│   ├── plugin.json                # Claude Code plugin manifest
+│   └── marketplace.json           # marketplace catalog (this repo is its own marketplace)
+├── install.sh                     # cross-agent installer
+└── scripts/
+    ├── validate.py                # Agent Skills spec validation
+    └── package.sh                 # build dist/*.zip for claude.ai upload
 ```
 
-Then type `/whats-next` or `/human-context-rebuild` in any Claude Code session.
+## Contributing
+
+Add a skill as `skills/<name>/SKILL.md`, with frontmatter limited to the six fields the
+[spec](https://agentskills.io/specification) allows — `name`, `description`, `license`,
+`compatibility`, `metadata`, `allowed-tools`. `name` must match the directory name, and
+`description` must say both what the skill does *and* when it should trigger, in under 1024
+characters. Anything beyond those fields is Claude Code-only and breaks claude.ai upload.
+
+Then check it:
+
+```bash
+pip install pyyaml
+python3 scripts/validate.py      # spec compliance
+claude plugin validate .         # plugin + marketplace manifests
+```
+
+Both run in CI on every push and pull request.
 
 ## License
 
