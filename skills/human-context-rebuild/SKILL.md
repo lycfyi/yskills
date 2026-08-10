@@ -1,6 +1,7 @@
 ---
 name: human-context-rebuild
 description: Rebuild the user's mental model of the current session with a tight recap — what we're doing, why, and where we are. Use this to recover after a break, a tangent, or a long subagent run. Trigger when the user invokes /human-context-rebuild, or says "remind me what we're doing", "我忘了", "我们到哪一步了", "where are we", "what was I doing", "summarize this session", "我们在干啥来着", "这是啥来着", "这个是干嘛的来着", "想不起来这个 session 在做什么", "脑子糊了", or similar re-orientation cues — including a bare "?" or "这是啥" pointing at the current work. Default to firing when the user signals lost context about the session itself; the cost of an unneeded recap is low. Do NOT trigger for "explain this code", "summarize this file", or any task-summary request — those are different.
+license: MIT
 ---
 
 # Human Context Rebuild

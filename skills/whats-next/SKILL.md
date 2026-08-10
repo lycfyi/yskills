@@ -14,6 +14,7 @@ description: >-
   decision needed (that is a recap request — answer it directly or use a
   context-rebuild skill if available), and NOT for questions about a specific
   file or piece of code.
+license: MIT
 ---
 
 # What's Next
