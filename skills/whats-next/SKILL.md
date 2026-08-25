@@ -57,7 +57,9 @@ Two invocation shapes, same downstream flow:
 From the evidence source chosen above, determine:
 
 - The overall goal of this session, in one sentence.
-- What is already DONE and verified (committed? deployed? approved?).
+- What is already DONE and verified (committed? deployed? approved?). A big code or
+  rule change that is deployed but not yet manually verified by the user is NOT done —
+  classify it as awaiting-manual-verification, a state of its own.
 - What is IN FLIGHT: background agents, workflows, deploys, external waits. Never
   fabricate a result for anything still running — report it as pending.
 - What is BLOCKED and on what — especially things blocked on the user's own decision.
@@ -84,6 +86,13 @@ Before asking anything, print a tight orientation so the choices make sense:
 - One line: what this session is about.
 - One line: last completed milestone.
 - One line each: anything in flight or blocked.
+- **Standard SOP — post-deploy manual test.** If the state includes a bigger code or
+  rule change that was deployed but not yet manually verified, attach a quick manual
+  test recipe right in the recap: 3–5 steps — which page/entry point (with URL), what
+  account or data to use, what to do, what the expected result looks like, and what
+  result would mean it's broken. One of the AskUserQuestion options should then be
+  "walk through this manual test" (usually the recommended one). Deployed-but-unverified
+  also weighs into the close-session verdict — it's the classic "don't close yet" reason.
 
 Plain prose, outcome-first, no headers, no internal codenames or table names. The recap
 exists only so the user can answer the questions confidently — details they don't need
