@@ -45,10 +45,16 @@ Two invocation shapes, same downstream flow:
     task/handoff doc that scopes this work (a handoff doc in the repo, the PR
     description, an issue-tracker ticket named in commits), and recent-commit
     trailers that record acceptance/deploy state.
-  - The mapping: committed-and-merged → DONE; committed on branch but not merged →
+  - The mapping: committed-and-merged-and-deployed → DONE; merged but not deployed →
+    merged-not-deployed (NOT done); committed on branch but not merged →
     done-but-not-landed; uncommitted diff → in flight; task-doc items with no
     corresponding diff → planned, not started. A step described in a doc with no code
     evidence did NOT happen.
+  - Deploy evidence is separate from merge evidence. Merged to main is not "live".
+    Look for: a deploy log / CI run for that commit, a commit or PR trailer that
+    records the deploy, a handoff doc line saying it shipped, or a live check
+    (hit the running service and see the change). If none of these exist, the
+    state is "merged, deploy unknown" — say exactly that, never round it up to done.
   - Don't read every file end-to-end — read enough to name the milestones and the
     fork points, and say when a judgment rests on commit messages alone.
 
@@ -57,9 +63,16 @@ Two invocation shapes, same downstream flow:
 From the evidence source chosen above, determine:
 
 - The overall goal of this session, in one sentence.
-- What is already DONE and verified (committed? deployed? approved?). A big code or
-  rule change that is deployed but not yet manually verified by the user is NOT done —
-  classify it as awaiting-manual-verification, a state of its own.
+- What is already DONE and verified (committed? deployed? approved?). **Code that is
+  not deployed is not done.** A commit, a merge, a green CI run — none of these is
+  "done" for anything that ships; the state is committed / merged / not deployed, and
+  the recap must name it that way. The only exception: work that provably needs no
+  deploy — docs, memory, a local script, a config that does not ship, a DB write
+  already applied to the target environment. If it is unclear whether a deploy is
+  needed or whether it happened, that is a fact to check, not a reason to default
+  to done. Never say 做完 / done / shipped for undeployed code.
+  A big code or rule change that is deployed but not yet manually verified by the
+  user is NOT done either — classify it as awaiting-manual-verification, a state of its own.
 - What is IN FLIGHT: background agents, workflows, deploys, external waits. Never
   fabricate a result for anything still running — report it as pending.
 - What is BLOCKED and on what — especially things blocked on the user's own decision.
@@ -85,6 +98,9 @@ Before asking anything, print a tight orientation so the choices make sense:
   make it closable (e.g. "把结论写进 handoff 文档就能关").
 - One line: what this session is about.
 - One line: last completed milestone.
+- One line, whenever code is involved: deploy status in plain words — "已部署到
+  prod" / "合并了但还没部署" / "还没合并" / "改的是文档，不需要部署". Never leave
+  this ambiguous; an undeployed change is reported as not finished.
 - One line each: anything in flight or blocked.
 - **Standard SOP — post-deploy manual test.** If the state includes a bigger code or
   rule change that was deployed but not yet manually verified, attach a quick manual
@@ -102,7 +118,9 @@ for the decision stay out.
 
 List the decisions that actually determine what happens next. Good fork points:
 
-- "Deploy now vs. run acceptance first"
+- "Deploy now vs. run acceptance first" — and when code is merged but not deployed,
+  deploying (or deciding it needs no deploy) MUST be one of the offered options; the
+  session is not at "task complete" until that is resolved.
 - "Continue feature X vs. switch to the bug that surfaced"
 - "Commit what's staged vs. review the diff together"
 - "The blocked item: resolve it via A or drop it"
@@ -139,7 +157,8 @@ ask again — same lightweight format.
 
 ## Edge cases
 
-- **Nothing pending, task complete**: say so in two lines, then ask one question offering
+- **Nothing pending, task complete** (which for code means deployed, or confirmed
+  no deploy needed): say so in two lines, then ask one question offering
   plausible follow-ups (including "结束，没别的了").
 - **Everything blocked on external waits**: report what is being waited on and expected
   timing; ask whether to poll now, switch to other work (offer specific candidates), or
