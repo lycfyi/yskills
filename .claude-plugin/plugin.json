@@ -1,8 +1,8 @@
 {
   "name": "yskills",
   "displayName": "yskills",
-  "description": "Session re-orientation skills for agents you leave and come back to: /whats-next and /human-context-rebuild",
-  "version": "0.1.0",
+  "description": "Skills for agents you leave and come back to: /whats-next and /human-context-rebuild re-orient you, /stale-check says whether the branch is still worth working on",
+  "version": "0.2.0",
   "author": {
     "name": "lycfyi",
     "url": "https://github.com/lycfyi"
@@ -16,7 +16,9 @@
     "context",
     "recap",
     "worktree",
-    "productivity"
+    "productivity",
+    "git",
+    "branch"
   ],
   "skills": "./skills"
 }
