@@ -30,7 +30,7 @@ jobs:
       - name: Shellcheck the installer
         run: |
           sudo apt-get update -qq && sudo apt-get install -y -qq shellcheck
-          shellcheck --severity=error install.sh scripts/package.sh
+          shellcheck --severity=error install.sh scripts/package.sh skills/*/scripts/*.sh
 
       - name: Package skills
         run: scripts/package.sh

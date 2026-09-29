@@ -1,6 +1,6 @@
 {
   "name": "yskills",
-  "description": "Claude Code / Agent Skills that re-orient you when you come back to a session",
+  "description": "Claude Code / Agent Skills for agents you leave and come back to: session re-orientation and branch staleness",
   "owner": {
     "name": "lycfyi",
     "url": "https://github.com/lycfyi"
@@ -9,8 +9,8 @@
     {
       "name": "yskills",
       "source": "./",
-      "description": "Session re-orientation skills: /whats-next and /human-context-rebuild",
-      "version": "0.1.0",
+      "description": "Session re-orientation and branch staleness: /whats-next, /human-context-rebuild, /stale-check",
+      "version": "0.2.0",
       "author": {
         "name": "lycfyi",
         "url": "https://github.com/lycfyi"
@@ -24,7 +24,8 @@
         "session",
         "context",
         "recap",
-        "worktree"
+        "worktree",
+        "git"
       ]
     }
   ]
