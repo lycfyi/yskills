@@ -1,6 +1,6 @@
 {
   "name": "yskills",
-  "description": "Claude Code / Agent Skills for agents you leave and come back to: session re-orientation and branch staleness",
+  "description": "Claude Code / Agent Skills for agents you leave and come back to: session re-orientation, branch staleness and cleanup, cold reads of user-facing words, and a HUD",
   "owner": {
     "name": "lycfyi",
     "url": "https://github.com/lycfyi"
@@ -9,8 +9,8 @@
     {
       "name": "yskills",
       "source": "./",
-      "description": "Session re-orientation and branch staleness: /whats-next, /human-context-rebuild, /stale-check",
-      "version": "0.2.0",
+      "description": "Session re-orientation, branch staleness and cleanup, and cold reads: /whats-next, /human-context-rebuild, /stale-check, /worktree-cleanup, /cold-read, plus the idle-return hook",
+      "version": "0.3.0",
       "author": {
         "name": "lycfyi",
         "url": "https://github.com/lycfyi"
@@ -25,7 +25,30 @@
         "context",
         "recap",
         "worktree",
-        "git"
+        "git",
+        "cold-read",
+        "hooks"
+      ]
+    },
+    {
+      "name": "hud",
+      "source": "./mods/hud",
+      "description": "A heads-up display above the prompt: context fill, repo state, turn progress with time estimates, a recap after you step away, auto whats-next, compaction notes, and optional breaks",
+      "version": "0.1.0",
+      "author": {
+        "name": "lycfyi",
+        "url": "https://github.com/lycfyi"
+      },
+      "homepage": "https://github.com/lycfyi/yskills/tree/main/mods/hud",
+      "repository": "https://github.com/lycfyi/yskills",
+      "license": "MIT",
+      "category": "productivity",
+      "tags": [
+        "hud",
+        "statusline",
+        "context",
+        "progress",
+        "mod"
       ]
     }
   ]
