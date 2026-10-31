@@ -1,0 +1,27 @@
+{
+  "description": "idle-return: after the user has been away for 3 hours (IDLE_RETURN_THRESHOLD), tell the agent to run whats-next before the next message",
+  "hooks": {
+    "UserPromptSubmit": [
+      {
+        "hooks": [
+          { "type": "command", "command": "\"${CLAUDE_PLUGIN_ROOT}/hooks/idle-return.sh\" prompt", "timeout": 10 }
+        ]
+      }
+    ],
+    "Stop": [
+      {
+        "hooks": [
+          { "type": "command", "command": "\"${CLAUDE_PLUGIN_ROOT}/hooks/idle-return.sh\" stop", "timeout": 10 }
+        ]
+      }
+    ],
+    "SessionStart": [
+      {
+        "matcher": "resume",
+        "hooks": [
+          { "type": "command", "command": "\"${CLAUDE_PLUGIN_ROOT}/hooks/idle-return.sh\" resume", "timeout": 10 }
+        ]
+      }
+    ]
+  }
+}
