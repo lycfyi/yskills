@@ -17,7 +17,7 @@ Code, Claude.ai, Codex, Cursor, OpenCode, Goose, and any other skills-compatible
 | [`whats-next`](skills/whats-next/SKILL.md) | `/whats-next` | Tells you whether the session can be closed, recaps it in 3–5 lines, then hands you the next step as clickable options |
 | [`human-context-rebuild`](skills/human-context-rebuild/SKILL.md) | `/human-context-rebuild` | Pure recap, no decisions — a sub-30-second re-orientation in a fixed 5-field format |
 | [`stale-check`](skills/stale-check/SKILL.md) | `/stale-check` | Says whether this branch/worktree is still worth working in — behind, merged (squash included), merged-then-kept-going, or about to conflict — and what would be lost if you dropped it |
-| [`worktree-cleanup`](skills/worktree-cleanup/SKILL.md) | `/worktree-cleanup` | Removes the worktrees and branches stale-check found dead, with plain git, only after proving each one is merged (squash included) and clean |
+| [`worktree-cleanup`](skills/worktree-cleanup/SKILL.md) | `/worktree-cleanup` | Removes the worktrees and branches stale-check found dead, only after proving each one is merged (squash included) and clean |
 | [`cold-read`](skills/cold-read/SKILL.md) | `/cold-read` | Hands user-facing words (UI copy, landing pages, bios, decks, plans) to fresh-context readers who never saw the conversation, and returns numbered findings: text that shouldn't be on the page, and text that will be misread |
 
 Also in this repo, for Claude Code only:
@@ -25,7 +25,7 @@ Also in this repo, for Claude Code only:
 | Name | Kind | What it does |
 | --- | --- | --- |
 | [`idle-return`](#the-hook-idle-return) | hook | After you have been away for 3 hours, the agent runs `whats-next` before it answers your next message |
-| [`hud`](mods/hud/README.md) | mod | A heads-up display above the prompt: context fill, repo state, turn progress with time estimates, and a recap after you step away |
+| [`hud`](mods/hud/README.md) | mod | A heads-up display above the prompt: context fill, repo state, turn progress with time estimates, and after you step away a recap plus an automatic `/whats-next` |
 
 **Which one do I want?** `human-context-rebuild` tells you where you are; `whats-next` tells
 you where you are *and* hands you the next move as clickable options (plus a verdict on
@@ -46,6 +46,11 @@ Installs every skill, keeps them updatable, and survives a machine rebuild.
 /plugin install yskills@yskills
 ```
 
+**The plugin also turns on the [idle-return hook](#the-hook-idle-return):** when you come back
+after 3 hours or more, the agent runs `whats-next` before it answers you. To turn it off, set
+`IDLE_RETURN_THRESHOLD` to `0` in the `env` block of `~/.claude/settings.json`. The plain-file
+install below leaves it off unless you pass `--idle-return`.
+
 Or without entering the REPL:
 
 ```bash
@@ -57,9 +62,6 @@ Plugin skills are namespaced by the plugin, so invoke them as `/yskills:whats-ne
 `/yskills:human-context-rebuild`, `/yskills:stale-check`, `/yskills:worktree-cleanup` and
 `/yskills:cold-read`. Claude also triggers them automatically when you say things like
 "我们到哪一步了", "what should I do next" or "cold read this".
-
-The plugin also turns on the [idle-return hook](#the-hook-idle-return). To turn it off, set
-`IDLE_RETURN_THRESHOLD` to `0` in the `env` block of `~/.claude/settings.json`.
 
 The HUD is a separate plugin in the same marketplace: `/plugin install hud@yskills`. See
 [`mods/hud/README.md`](mods/hud/README.md).
@@ -232,13 +234,15 @@ one screen:
 
 The verdicts: **LEFTOVER** (PR merged, commits after it), **DEAD** (merged — fast-forward, rebase,
 or squash — or PR closed), **REUSED** (merged branch with new uncommitted work on top),
-**CONFLICTING**, **STALE**, **DRIFTING**, **FRESH**. Each report also names what would be lost:
+**CONFLICTING** (behind, and a rebase would conflict), **STALE** (clearly behind), **DRIFTING** (a little
+behind), **FRESH**. Each report also names what would be lost:
 unpushed and post-merge commits, dirty and untracked files. `--all-worktrees` sweeps every
 worktree of the repo and marks the ones that can go.
 
 Under the verdict it says what the branch was for (PR title, first commit, the folders it
 touched), because that is the next question people ask. It never rebases, merges, or deletes
-anything; the only side effect is `git fetch --prune`. It
+branches or files; the only side effect is `git fetch --prune`, which refreshes the remote-tracking
+refs. It
 detects squash merges from git alone (a multi-commit branch's combined diff matched against target),
 and uses `gh` when available for PR state and post-merge commits. The target branch defaults to
 `origin/HEAD`; override it with `--target develop` or `STALE_CHECK_TARGET`.
@@ -271,9 +275,12 @@ this?") hands the words to readers that never saw any of that:
 - **persona readers** for pages that must sell or persuade — a busy owner, a skeptical buyer, a
   CTO, three kinds of investor — each reporting what they understood and what they would do.
 
-It returns one numbered list, so you can answer "1 fix, 2 skip, 3 your call". It ships with a
-calibration exam: two answer-keyed sets of copy, one held out. With the current rubric, one run
-caught 20 of 21 problems in set A and 12 of 13 in the held-out set B, with no false alarms
+It returns one numbered list, so you can answer "1 fix, 2 skip, 3 your call". Each reader is one
+subagent; on the 27-item exam, one rubric review used about 130k tokens.
+
+It ships with a calibration exam: two answer-keyed sets of copy. Set A was used to tune the
+rubric; set B is held out and only checks it. With the current rubric, one run caught 20 of 21
+problems in set A and 12 of 13 in set B, with no false alarms
 ([details](skills/cold-read/exam/README.md)).
 
 ### The hook: idle-return
