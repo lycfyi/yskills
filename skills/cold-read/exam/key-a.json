@@ -1,0 +1,33 @@
+{
+  "bad": {
+    "1": "Doesn't say who makes the final call. The owner takes the assistant as the gatekeeper ('3 approved, 7 rejected, I only need to look at 2'), and when a bad expense gets paid he blames the tool.",
+    "2": "'(3rd submission)' is internal shorthand (and 'good-3' / 'quiet-5' are internal IDs). The owner can't tell what it means, so he never opens these two.",
+    "4": "Raw values (a cost-centre code, a project tag, a link) put in front of the person deciding, with no word on what each one is or what making them requirements would do. He can't tell, so he doesn't dare decide.",
+    "5": "The empty home only says 'select a course' while every number below is 0. A new instructor doesn't know why it's all zero or what to do next.",
+    "6": "The owner can't tell who 'employees who haven't submitted yet' covers (it is also the only button without a count), so he never clicks it.",
+    "7": "Can't tell these are counts, or counts of what (reports? dollars? people?), and the order runs backwards: reimbursed comes after submitted.",
+    "8": "'Automatically sends' is read as 'all of these go out on their own', so nobody clicks the per-group explanation buttons. It never says which message is automatic and which still needs his click.",
+    "10": "It is the student's turn, but 'Waiting 1 hour' reads as 'the student has been waiting on me for an hour'.",
+    "11": "The owner reads 'results not guaranteed' and shrugs: it's boilerplate. It never names the real consequence (a pointless purchase can be paid automatically), which also clashes with wanting every expense to have a real business reason.",
+    "12": "The 'Suggested' rewrite is a first-person fill-in-the-blank about an experience. A student who never baked the loaf fills in the blanks and hands in a bake that never happened.",
+    "13": "No filter is set, yet it tells him to adjust his filters.",
+    "15": "The risk sits in three lines of small print, and the button only says 'I understand, turn on'. The owner clicked without reading them.",
+    "16": "The tab is called 'Blocked' but everything inside says 'Ban'. He can't tell whether blocking and banning are the same thing.",
+    "17": "'The 3 angles in the brief': the instructor doesn't know which three are meant, and clicks 'All must follow an angle' anyway.",
+    "18": "'Snapshot history' and 'building the curve' are implementation words. The seller can't tell what is missing or what refreshing does.",
+    "20": "'v2 · 1 open' is unreadable: version 2 of what, and one open what?",
+    "21": "The group is called 'Suggest sending back', but the suggested action is 'ask her to add it, which is not a send-back'. He can't tell what the button will do.",
+    "22": "Sends the work back for a preference the brief never asked for. The student asks 'is this a new rule?' and feels accused.",
+    "23": "Can't tell what 'featured' is based on: featured by whom, and how?",
+    "25": "Unreadable: 'install' and 'writes' are implementation words, and nobody knows what the short code is.",
+    "26": "The announcement carries no content; nobody can tell what changed."
+  },
+  "good": {
+    "3": "The doubt is written on the button itself, so the owner decides knowing about it.",
+    "9": "Explains the version clash plainly; the owner understood which clicks counted and which didn't.",
+    "14": "Says who decides; after this line, owners stopped treating the assistant as the gatekeeper.",
+    "19": "Dated, says the rule is new and not the student's fault, and points at what already meets it; the student didn't feel blamed and made the change.",
+    "24": "Refuses and gives the reason; no misunderstanding followed.",
+    "27": "The owner understood the report was already sent back and won't be paid unless he approves it."
+  }
+}

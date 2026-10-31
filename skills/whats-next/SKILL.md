@@ -23,7 +23,9 @@ The user runs many sessions in parallel and comes back after hours away. They ca
 remember where this conversation stands. The job: rebuild the state FOR them, then hand
 them a small set of concrete, clickable decisions — never a blank prompt to fill in.
 
-Match the language of the conversation.
+Match the language of the conversation. Every word the user sees follows it: the recap,
+the questions, the option labels and their descriptions. An English recap in a Chinese
+session reads as broken.
 
 ## Workflow
 
@@ -71,8 +73,9 @@ From the evidence source chosen above, determine:
   already applied to the target environment. If it is unclear whether a deploy is
   needed or whether it happened, that is a fact to check, not a reason to default
   to done. Never say 做完 / done / shipped for undeployed code.
-  A big code or rule change that is deployed but not yet manually verified by the
-  user is NOT done either — classify it as awaiting-manual-verification, a state of its own.
+  A big code or rule change that is deployed but not yet verified on the live system
+  (by you or the user) is NOT done either — classify it as awaiting verification, a state
+  of its own.
 - What is IN FLIGHT: background agents, workflows, deploys, external waits. Never
   fabricate a result for anything still running — report it as pending.
 - What is BLOCKED and on what — especially things blocked on the user's own decision.
@@ -101,14 +104,23 @@ Before asking anything, print a tight orientation so the choices make sense:
 - One line, whenever code is involved: deploy status in plain words — "已部署到
   prod" / "合并了但还没部署" / "还没合并" / "改的是文档，不需要部署". Never leave
   this ambiguous; an undeployed change is reported as not finished.
+  Then say what the user will NOT see yet and why, in terms of what they look at — e.g.
+  "Not on the page yet: it still needs PR #123 from another session, which isn't merged."
+  A session that only changed docs or config can still leave the user's page unchanged
+  because a dependency hasn't landed. Check the open PRs the work depends on before
+  saying "no deploy needed" is the whole story.
 - One line each: anything in flight or blocked.
-- **Standard SOP — post-deploy manual test.** If the state includes a bigger code or
-  rule change that was deployed but not yet manually verified, attach a quick manual
-  test recipe right in the recap: 3–5 steps — which page/entry point (with URL), what
-  account or data to use, what to do, what the expected result looks like, and what
-  result would mean it's broken. One of the AskUserQuestion options should then be
-  "walk through this manual test" (usually the recommended one). Deployed-but-unverified
-  also weighs into the close-session verdict — it's the classic "don't close yet" reason.
+- **Standard SOP — post-deploy verification: you verify, the user looks once.** If a
+  bigger code or rule change is deployed but not yet verified, the recommended option is
+  that YOU verify it now — a browser tool screenshot, `curl`, or a read-only query — and
+  come back with one screenshot or one number plus what it means ("I'll check: open the
+  orders page, confirm the new column, send you the screenshot (Recommended)"). Users
+  asked to run a manual test themselves tend to decline and hand it back. Offer a manual
+  recipe only for what you cannot reach yourself (a login you don't have, a device, a real
+  user's action), and make it concrete: exact URL, exact account or record to look at,
+  what the expected result looks like, what would mean it's broken. Never "have a typical
+  user take a look". Deployed-but-unverified still weighs into the close-session
+  verdict — it's the classic "don't close yet" reason.
 
 Plain prose, outcome-first, no headers, no internal codenames or table names. The recap
 exists only so the user can answer the questions confidently — details they don't need
@@ -118,7 +130,8 @@ for the decision stay out.
 
 List the decisions that actually determine what happens next. Good fork points:
 
-- "Deploy now vs. run acceptance first" — and when code is merged but not deployed,
+- "Deploy now vs. run acceptance first" (if the repo has a deploy or release skill, the
+  deploy option runs it) — and when code is merged but not deployed,
   deploying (or deciding it needs no deploy) MUST be one of the offered options; the
   session is not at "task complete" until that is resolved.
 - "Continue feature X vs. switch to the bug that surfaced"

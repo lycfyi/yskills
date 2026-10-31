@@ -6,6 +6,7 @@
 #   ./install.sh --agent all           # install everywhere an agent dir already exists
 #   ./install.sh --dir ./.claude/skills whats-next
 #   ./install.sh --link                # symlink instead of copy (edits track the repo)
+#   ./install.sh --idle-return         # also add the idle-return hook to Claude Code (needs jq)
 #   ./install.sh --list                # show skills and resolved targets, install nothing
 #
 # Remote one-liner (clones to a temp dir, installs, cleans up):
@@ -22,6 +23,7 @@ CUSTOM_DIR=""
 MODE="copy"
 FORCE=0
 LIST_ONLY=0
+IDLE_RETURN=0
 SKILLS=()
 CLEANUP_DIR=""
 
@@ -39,6 +41,11 @@ Options:
   --dir <path>     Install into an explicit directory (overrides --agent)
   --link           Symlink skills instead of copying
   --force          Overwrite existing skills without asking
+  --idle-return    Also install the idle-return hook for Claude Code: after 3 hours
+                   away, the agent runs /whats-next before your next message.
+                   Copies hooks/idle-return.sh to ~/.claude/hooks/idle-return/ and
+                   adds three hooks to ~/.claude/settings.json (backed up first).
+                   Honors CLAUDE_CONFIG_DIR. Needs jq.
   --list           Print skills and resolved target, then exit
   -h, --help       Show this help
 
@@ -53,6 +60,7 @@ while [ $# -gt 0 ]; do
     --dir) CUSTOM_DIR="${2:-}"; [ -n "$CUSTOM_DIR" ] || die "--dir needs a value"; shift 2 ;;
     --link) MODE="link"; shift ;;
     --force) FORCE=1; shift ;;
+    --idle-return) IDLE_RETURN=1; shift ;;
     --list) LIST_ONLY=1; shift ;;
     -h|--help) usage; exit 0 ;;
     -*) die "unknown option: $1 (try --help)" ;;
@@ -77,6 +85,8 @@ if [ -z "$SRC" ]; then
   SRC="$CLEANUP_DIR/yskills/skills"
 fi
 [ -d "$SRC" ] || die "no skills/ directory found at $SRC"
+REPO_ROOT="$(cd "$SRC/.." && pwd)"
+CLAUDE_HOME="${CLAUDE_CONFIG_DIR:-$HOME/.claude}"
 
 # --- resolve target directories ----------------------------------------------
 target_for() {
@@ -139,6 +149,7 @@ if [ "$LIST_ONLY" -eq 1 ]; then
   info "Skills:  ${ALL_SKILLS[*]}"
   info "Targets: ${TARGETS[*]}"
   info "Mode:    $MODE"
+  [ "$IDLE_RETURN" -eq 1 ] && info "Hook:    idle-return -> $CLAUDE_HOME/hooks/idle-return, $CLAUDE_HOME/settings.json"
   exit 0
 fi
 
@@ -171,10 +182,71 @@ for target in "${TARGETS[@]}"; do
   done
 done
 
-if [ "$installed" -eq 0 ]; then
+# --- idle-return hook (Claude Code) ---------------------------------------------
+# Claude Code has no idle event, so the hook is three entries: Stop records the time,
+# UserPromptSubmit and SessionStart(resume) compare against it.
+hook_done=0
+if [ "$IDLE_RETURN" -eq 1 ]; then
+  command -v jq >/dev/null 2>&1 || die "--idle-return needs jq to edit settings.json"
+  hook_src="$REPO_ROOT/hooks/idle-return.sh"
+  hook_dir="$CLAUDE_HOME/hooks/idle-return"
+  hook="$hook_dir/idle-return.sh"
+  settings="$CLAUDE_HOME/settings.json"
+  [ -f "$hook_src" ] || die "no hooks/idle-return.sh found at $hook_src"
+  mkdir -p "$hook_dir"
+  if [ -e "$hook" ] || [ -L "$hook" ]; then
+    if [ "$FORCE" -eq 1 ] || cmp -s "$hook_src" "$hook"; then
+      rm -f "$hook"
+    else
+      info "  kept the existing $hook (it differs; re-run with --force to replace it)"
+    fi
+  fi
+  if [ ! -e "$hook" ] && [ ! -L "$hook" ]; then
+    if [ "$MODE" = "link" ]; then
+      ln -s "$hook_src" "$hook"
+      info "  linked  idle-return -> $hook"
+    else
+      cp "$hook_src" "$hook"
+      chmod +x "$hook"
+      info "  copied  idle-return -> $hook"
+    fi
+  fi
+  cur='{}'
+  [ -f "$settings" ] && cur="$(cat "$settings")"
+  new="$(jq --arg hook "\"$hook\"" '
+    def addhook($ev; $matcher; $cmd):
+      if ([.hooks[$ev][]?.hooks[]?.command] | index($cmd)) then .
+      else .hooks[$ev] = ((.hooks[$ev] // []) + [({hooks: [{type: "command", command: $cmd}]}
+                          + (if $matcher == "" then {} else {matcher: $matcher} end))])
+      end;
+    addhook("UserPromptSubmit"; ""; $hook + " prompt")
+    | addhook("Stop"; ""; $hook + " stop")
+    | addhook("SessionStart"; "resume"; $hook + " resume")
+  ' <<<"$cur")" || die "$settings is not valid JSON; fix it and re-run"
+  if [ "$new" = "$(jq . <<<"$cur")" ]; then
+    info "  idle-return hooks already in $settings"
+  else
+    if [ -f "$settings" ]; then
+      backup="$settings.bak-$(date +%Y%m%d%H%M%S)"
+      cp "$settings" "$backup"
+      info "  backed up $settings -> $backup"
+    fi
+    printf '%s\n' "$new" > "$settings"
+    info "  added the idle-return hooks to $settings"
+  fi
+  hook_done=1
+fi
+
+if [ "$installed" -eq 0 ] && [ "$hook_done" -eq 0 ]; then
   info "Nothing installed."
   exit 0
 fi
 
-printf '\nInstalled %s skill(s). Restart your agent if it does not pick them up, then try:\n' "$installed"
-for s in "${SKILLS[@]}"; do printf '  /%s\n' "$s"; done
+if [ "$installed" -gt 0 ]; then
+  printf '\nInstalled %s skill(s). Restart your agent if it does not pick them up, then try:\n' "$installed"
+  for s in "${SKILLS[@]}"; do printf '  /%s\n' "$s"; done
+fi
+if [ "$hook_done" -eq 1 ]; then
+  printf '\nidle-return is on for new Claude Code sessions. Tune it in settings.json "env":\n'
+  printf '  IDLE_RETURN_THRESHOLD=10800 (seconds; 0 turns it off), IDLE_RETURN_LANG=en|zh\n'
+fi

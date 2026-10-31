@@ -1,0 +1,24 @@
+{
+  "bad": {
+    "1": "The same card says both 'you can add it' and 'you need another plan'; he can't tell which is true.",
+    "2": "Can't tell who is waiting on whom, so he doesn't know whether the next move is his or the buyer's.",
+    "4": "Says who can see him, not what happens next: buyers will send him offers directly.",
+    "5": "Doesn't say compared with whom; a bottom-tier rank reads as near the top.",
+    "7": "The threshold has no number, so he can't tell how far $12 is from it.",
+    "8": "Two numbers, and he can't tell what each one counts.",
+    "9": "No email actually goes out, and nothing on screen says so; he assumes the colleague has been invited.",
+    "11": "Doesn't say that confirming immediately sends the instructor a welcome notice.",
+    "12": "The balance is $0.00, yet it says earnings are claimable and shows a Withdraw button.",
+    "13": "Three places, three stories about how to get the membership: apply, wait to be granted, or no applications at all.",
+    "14": "He has just written his feedback in the thread, yet it tells him to add a comment first.",
+    "16": "The run has ended, yet a green dot says it is still accepting submissions.",
+    "17": "One setting, two names; he can't tell whether a skip and a pause are the same thing."
+  },
+  "good": {
+    "3": "The fixed empty state: says plainly there is nothing yet and doesn't send him to filters he never set.",
+    "6": "The fixed empty home: says plainly there is nothing for him to do.",
+    "10": "The fixed invite: says no email goes out and what he has to do instead.",
+    "15": "Says what ended and what that meant for this submission.",
+    "18": "Gives the number and where he stands."
+  }
+}

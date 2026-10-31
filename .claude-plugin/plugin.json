@@ -1,8 +1,8 @@
 {
   "name": "yskills",
   "displayName": "yskills",
-  "description": "Skills for agents you leave and come back to: /whats-next and /human-context-rebuild re-orient you, /stale-check says whether the branch is still worth working on",
-  "version": "0.2.0",
+  "description": "Skills for agents you leave and come back to: /whats-next and /human-context-rebuild re-orient you, /stale-check and /worktree-cleanup handle finished branches, /cold-read checks words before users see them, and the idle-return hook runs whats-next when you come back",
+  "version": "0.3.0",
   "author": {
     "name": "lycfyi",
     "url": "https://github.com/lycfyi"
@@ -18,7 +18,10 @@
     "worktree",
     "productivity",
     "git",
-    "branch"
+    "branch",
+    "cold-read",
+    "copywriting",
+    "hooks"
   ],
   "skills": "./skills"
 }

@@ -21,7 +21,7 @@ FETCH=1
 ALL_WT=0
 TARGET="${STALE_CHECK_TARGET:-}"
 TARGET_SOURCE=""
-[ -n "$TARGET" ] && TARGET_SOURCE=env
+[ -n "$TARGET" ] && TARGET_SOURCE="env"
 while [ $# -gt 0 ]; do
   case "$1" in
     --no-fetch) FETCH=0 ;;
@@ -124,17 +124,16 @@ if [ -n "$MB" ]; then
 fi
 
 # ---------- PR status ----------
-PR_STATE=""; PR_NUMBER=""; PR_URL=""; PR_MERGED_AT=""; PR_HEAD=""
+PR_STATE=""; PR_NUMBER=""; PR_URL=""; PR_MERGED_AT=""; PR_HEAD=""; PR_TITLE=""
 if command -v gh >/dev/null 2>&1 && [ "$ON_TARGET" = 0 ] && [ "$DETACHED" = 0 ]; then
-  pr=$(gh pr list --head "$BRANCH" --state all --limit 1 --json number,state,url,mergedAt,headRefOid 2>/dev/null)
-  if [ -n "$pr" ] && [ "$pr" != "[]" ]; then
-    PR_NUMBER=$(echo "$pr" | sed -n 's/.*"number":\([0-9]*\).*/\1/p')
-    PR_STATE=$(echo "$pr" | sed -n 's/.*"state":"\([A-Z]*\)".*/\1/p')
-    PR_URL=$(echo "$pr" | sed -n 's/.*"url":"\([^"]*\)".*/\1/p')
-    PR_MERGED_AT=$(echo "$pr" | sed -n 's/.*"mergedAt":"\([^"]*\)".*/\1/p')
-    PR_HEAD=$(echo "$pr" | sed -n 's/.*"headRefOid":"\([0-9a-f]*\)".*/\1/p')
-  elif [ -n "$pr" ]; then
+  # One tab-separated line. mergedAt goes last because it is empty on unmerged PRs.
+  pr=$(gh pr list --head "$BRANCH" --state all --limit 1 \
+         --json number,state,headRefOid,url,title,mergedAt \
+         --jq 'if length == 0 then "none" else .[0] | [.number, .state, .headRefOid, .url, .title, (.mergedAt // "")] | @tsv end' 2>/dev/null)
+  if [ "$pr" = none ]; then
     PR_STATE=none
+  elif [ -n "$pr" ]; then
+    IFS="$(printf '\t')" read -r PR_NUMBER PR_STATE PR_HEAD PR_URL PR_TITLE PR_MERGED_AT <<<"$pr"
   fi
 fi
 
@@ -240,6 +239,26 @@ if [ -n "$POST_MERGE" ] && [ "$POST_MERGE" != 0 ] && [ "$POST_MERGE" != unknown 
   echo "## commits after PR #$PR_NUMBER was merged"
   git log --oneline --no-decorate "$PR_HEAD..HEAD"
 fi
+# After a verdict, the next question is usually "what was this branch for?"
+if [ "$ON_TARGET" = 0 ]; then
+  purpose=$(
+    [ -n "$PR_TITLE" ] && echo "PR title: $PR_TITLE"
+    if [ -n "$MB" ] && [ "${AHEAD:-0}" -gt 0 ]; then
+      first=$(git log --reverse --format=%s "$TARGET_REF..HEAD" 2>/dev/null | head -1)
+      [ -n "$first" ] && echo "first commit: $first"
+      git diff --shortstat "$MB" HEAD 2>/dev/null | sed 's/^ */diffstat: /'
+      git diff --name-only "$MB" HEAD 2>/dev/null | awk -F/ 'NF>1{print $1"/"$2; next}{print}' \
+        | sort | uniq -c | sort -rn | head -5 | sed 's/^ */area: /'
+    fi
+    # Task notes or plans that name the branch. Short names would match too much.
+    if [ "$DETACHED" = 0 ] && [ "${#BRANCH}" -ge 8 ]; then
+      git grep -l -F -e "$BRANCH" -- '*.md' 2>/dev/null | head -3 | sed 's/^/mentioned in: /'
+    fi
+  )
+  echo
+  echo "## purpose (what this branch is for)"
+  echo "${purpose:-none found: no PR title, no commits of its own, no notes naming the branch}"
+fi
 if [ "$DIRTY" != 0 ] || [ "$UNTRACKED" != 0 ]; then
   echo
   echo "## working tree"
@@ -249,24 +268,44 @@ fi
 if [ "$ALL_WT" = 1 ]; then
   echo
   echo "## other worktrees of this repo"
+  # One gh call for recently merged PRs, so squash-merged rows don't read as merged=no.
+  MERGED_PRS=""
+  if command -v gh >/dev/null 2>&1; then
+    MERGED_PRS=$(gh pr list --state merged --limit 300 --json headRefName,headRefOid \
+                   --jq '.[] | [.headRefName, .headRefOid] | @tsv' 2>/dev/null)
+  fi
   git worktree list --porcelain | awk '
     /^worktree /{sub(/^worktree /,""); w=$0; b="(detached)"}
     /^branch /{sub(/^branch refs\/heads\//,""); b=$0}
     /^$/{if (w!="") print b "\t" w; w=""}
     END{if (w!="") print b "\t" w}' | while IFS="$(printf '\t')" read -r br wt; do
     [ "$wt" = "$ROOT" ] && continue
+    flags=""
+    # Trees under a temp dir were usually made by another agent session that may be gone.
+    case "$wt" in */scratchpad/*|/tmp/*|/private/tmp/*|/var/folders/*|/private/var/folders/*) flags="$flags temp_dir" ;; esac
+    if [ -d "$wt" ]; then
+      dirty=$(git -C "$wt" status --porcelain --untracked-files=all 2>/dev/null | wc -l | tr -d ' ')
+    else
+      dirty="?"; flags="$flags missing_dir"   # registered, but the folder is gone (prunable)
+    fi
     ref="$br"; [ "$br" = "(detached)" ] && ref=$(git -C "$wt" rev-parse HEAD 2>/dev/null)
-    dirty=$(git -C "$wt" status --porcelain --untracked-files=all 2>/dev/null | wc -l | tr -d ' ')
-    if [ -n "$MB" ]; then
+    if [ -n "$MB" ] && [ -n "$ref" ]; then
       read -r b a <<<"$(git rev-list --left-right --count "$TARGET_REF...$ref" 2>/dev/null)"
       merged=no
       if git merge-base --is-ancestor "$ref" "$TARGET_REF" 2>/dev/null; then merged=yes
       elif [ "$(git cherry "$TARGET_REF" "$ref" 2>/dev/null | grep -c '^+' || true)" = 0 ]; then merged=yes_patch
+      elif [ "$br" != "(detached)" ] && [ -n "$MERGED_PRS" ]; then
+        pr_head=$(printf '%s\n' "$MERGED_PRS" | awk -F'\t' -v b="$br" '$1==b{print $2; exit}')
+        if [ -n "$pr_head" ]; then
+          if [ "$pr_head" = "$(git rev-parse "$ref" 2>/dev/null)" ]; then merged=yes_pr_head
+          else merged=pr_merged_tip_moved   # commits after the merge, or a rewrite: probe it alone
+          fi
+        fi
       fi
       age=$(days_ago "$(git log -1 --format=%ct "$ref" 2>/dev/null)")
-      echo "$br  ahead=$a behind=$b merged=$merged dirty=$dirty tip_age_days=$age  ($wt)"
+      echo "$br  ahead=$a behind=$b merged=$merged dirty=$dirty tip_age_days=$age${flags:+  flags:${flags# }}  ($wt)"
     else
-      echo "$br  dirty=$dirty  ($wt)"
+      echo "$br  dirty=$dirty${flags:+  flags:${flags# }}  ($wt)"
     fi
   done
 fi
