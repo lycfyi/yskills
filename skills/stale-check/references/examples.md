@@ -5,6 +5,8 @@ numbers replaced. The counts, ages, and verdict logic are what the probe actuall
 is trimmed to what the verdict turned on; the commit lists are shortened.
 
 The report language follows the question: examples 1, 3, and 5 were asked in Chinese, the rest in English.
+The `## purpose` block (what the branch is for) was added to the probe after these runs. Example 1 shows
+it, with names replaced the same way.
 
 1. [LEFTOVER: the PR merged, then the branch kept going](#1-leftover--the-pr-merged-then-the-branch-kept-going)
 2. [DEAD: a two-commit squash merge](#2-dead--a-two-commit-squash-merge)
@@ -42,11 +44,19 @@ c41e2b7 Merge pull request #2 from acme/feat/export-csv
 
 ## commits after PR #2 was merged
 5f18a0d feat(export): never report a partial export as complete
+
+## purpose (what this branch is for)
+PR title: Export results as CSV
+first commit: feat(export): never report a partial export as complete
+diffstat: 2 files changed, 31 insertions(+), 4 deletions(-)
+area: 1 src/export
+area: 1 tests/export_test.py
 ```
 
 **Report**
 
 > 【LEFTOVER — PR 合了但后面还有提交】feat/export-csv vs main：PR #2 一个多月前就合了，之后又提交了 1 次，而且没推。
+> 这个分支是干啥的：给 CLI 加 CSV 导出（PR #2「Export results as CSV」）。合并后那次提交修的是导出不完整也报成功。
 >
 > - main 上比这个分支多的只有 PR #2 的合并提交，没有别的改动。
 > - 会丢的：5f18a0d「feat(export): never report a partial export as complete」。它只在本机，远端分支和 main 上都没有。
@@ -252,6 +262,9 @@ feat/vendor-payouts  ahead=10 behind=7 merged=no dirty=0 tip_age_days=2  (/home/
 Three rows say `merged=no`, and the table only runs `git cherry`, which misses squash merges. So each of
 those three got its own probe: `invoice-adjustments` → `yes_squash`, PR #141 merged (example 2);
 `estimate-breakdown` → `yes_squash`, PR #133 merged; `vendor-payouts` → `no`, no PR, rebase clean.
+(This run predates the merged-PR lookup in the table. The probe now makes one `gh` call for recently
+merged PRs, so the two squash-merged rows would read `merged=yes_pr_head` directly. `vendor-payouts` would
+still read `merged=no`.)
 
 **Report**
 

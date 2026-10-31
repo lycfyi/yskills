@@ -19,15 +19,15 @@ bash <this-skill-dir>/scripts/stale_check.sh [repo-path] [--target <branch>] [--
 
 - Default path is cwd. Pass a path when the user names another repo/worktree.
 - Add `--all-worktrees` when the question is "which worktrees can go" or the repo has several
-  worktrees (the script lists each with ahead/behind/merged/dirty/age).
+  worktrees (the script lists each with ahead/behind/merged/dirty/age and flags).
 - `--no-fetch` only if offline or the user says not to touch the network.
 - Target branch: `--target` → `$STALE_CHECK_TARGET` → the worktree manager's own record (super.engineering's
   `sc worktree status`, used automatically inside such a session) → `origin/HEAD` → main/master. If the
   user or the tool that created the worktree says the base is something else (`develop`, a release
   branch), pass `--target`; don't re-derive it from the branch name.
 
-The first block is `KEY=VALUE`; the rest is supporting evidence (commit lists, post-merge commits, dirty
-files, other worktrees). Read the whole thing before judging.
+The first block is `KEY=VALUE`; the rest is supporting evidence (commit lists, post-merge commits, what
+the branch is for, dirty files, other worktrees). Read the whole thing before judging.
 
 ## 2. Verdict ladder (first match wins)
 
@@ -73,6 +73,10 @@ Thresholds are heuristics for a repo where the target moves several commits a da
 Keep it to one screen:
 
 1. **Verdict line** — `【DEAD / STALE / …】<branch> vs <target>`, with the 2–3 numbers that drove it.
+   Right under it, one line on **what the branch is for**, from the `## purpose` block (PR title, first
+   commit, diff size, top touched folders, notes that name the branch). After a verdict, people usually
+   ask next what the branch was for, so answer it up front. If only commit messages back it, say it's a
+   guess.
 2. **What's on target that this branch lacks** — summarize the "target commits not on this branch"
    list in one or two lines (themes, not every commit). If overlap/conflict, name the files.
 3. **What would be lost** — post-merge commits, unpushed commits, dirty/untracked files. Name them.
@@ -82,8 +86,20 @@ Keep it to one screen:
    that's a new request, handled under the repo's own rules and its worktree tool's own commands.
 
 With `--all-worktrees`, add a compact table of the other worktrees (branch, ahead/behind, merged, dirty,
-tip age) and mark the DEAD ones. The table only runs cheap checks; probe any borderline row on its own
-(`stale_check.sh <its path>`) before calling it DEAD.
+tip age, flags) and mark the DEAD ones. The table runs cheap checks plus one `gh` call for recently
+merged PRs:
+
+- `merged=yes` / `yes_patch` / `yes_pr_head` — the work is on target (`yes_pr_head`: a merged PR's head
+  is exactly this branch tip, which is how squash merges show up).
+- `merged=pr_merged_tip_moved` — a PR from this branch merged, but the tip has moved since: commits after
+  the merge, or a rewrite. Probe it on its own; it is often LEFTOVER.
+- `merged=no` — not proven merged. Squash merges without a PR record land here too.
+- Flags: `temp_dir` = the tree lives under `/tmp`, `$TMPDIR` or an agent scratchpad, usually made by
+  another agent session that may be gone; `missing_dir` = registered but the folder is gone (prunable,
+  `dirty=?`).
+
+Probe any borderline row on its own (`stale_check.sh <its path>`) before calling it DEAD. If the user then
+asks to clean up, hand off to the `worktree-cleanup` skill.
 
 Worked examples from real runs (names and paths changed) — LEFTOVER, a squash-merged DEAD, CONFLICTING,
 DRIFTING, REUSED, and a worktree sweep — are in [references/examples.md](references/examples.md). Read
@@ -100,6 +116,8 @@ them when unsure how a verdict should sound.
   PR record".
 - `PR=n/a` means `gh` is missing, unauthenticated, or the remote isn't on GitHub. Merge detection still
   works from git alone, except `yes_pr_head` and `POST_MERGE_COMMITS`.
+- Worktree managers and sidebars often show "files changed" against the target. That is the branch diff,
+  not uncommitted work; use the probe's `DIRTY_TRACKED` / `UNTRACKED` for what would be lost.
 - If the user goes on to delete a worktree, a dev server still running inside it (e.g. `next dev`) can
   write its cache back and leave an empty shell directory. Worth a line in the recommendation.
 - The fetch is the only network/write side effect. The script never touches local `main`; a stale local
