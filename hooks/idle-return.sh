@@ -79,7 +79,9 @@ case "$MODE" in
     ;;
   resume)
     if [ -n "$TRANSCRIPT" ] && [ -f "$TRANSCRIPT" ]; then
-      LAST="$(stat -f %m "$TRANSCRIPT" 2>/dev/null || stat -c %Y "$TRANSCRIPT" 2>/dev/null || echo "$NOW")"
+      # GNU stat first: on Linux, `stat -f` means file-system status and prints text even when it fails.
+      LAST="$(stat -c %Y "$TRANSCRIPT" 2>/dev/null || stat -f %m "$TRANSCRIPT" 2>/dev/null)"
+      case "$LAST" in ''|*[!0-9]*) LAST="$NOW" ;; esac
       GAP=$(( NOW - LAST ))
       if [ "$GAP" -ge "$THRESHOLD" ] && ! already_shown; then emit SessionStart "$GAP"; fi
     fi
