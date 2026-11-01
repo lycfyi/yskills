@@ -73,6 +73,7 @@ const recap = atom({ plugin: 'hud', key: 'recap' } as const, null)
 const backgroundTasks = atom({ plugin: 'hud', key: 'backgroundTasks' } as const, [])
 const autoNext = atom({ plugin: 'hud', key: 'autoNext' } as const, { forAt: null, isArmed: true })
 const doneLoggedFor = atom({ plugin: 'hud', key: 'doneLoggedFor' } as const, null)
+const doneExtraSeen = atom({ plugin: 'hud', key: 'doneExtraSeen' } as const, [])
 
 const MAX_REPOS = 3
 const LABEL = 8
@@ -85,7 +86,11 @@ const ASK_TOOL = 'AskUserQuestion'
 // A turn must have run this long before a break starts: only then are you waiting
 const WAIT_BEFORE_REST_MS = 20_000
 const MAX_RATIOS = 20
-const DONE_CMD_TIMEOUT_MS = 60_000
+// HUD_DONE_CMD's time limit: 60 s unless HUD_DONE_CMD_TIMEOUT gives 1 to 900 seconds
+const DONE_CMD_TIMEOUT_S = 60
+const DONE_CMD_TIMEOUT_MAX_S = 900
+// Text read from HUD_RECAP_RULES and HUD_DONE_EXTRA_ASK, and the earlier replies passed back, is cut to this
+const EXTRA_TEXT_MAX = 8_000
 
 // HUD_LANG=zh for Chinese; English otherwise.
 const langFor = async ($: EngineInterface): Promise<Lang> => langOf(await $.env.get('HUD_LANG').catch(() => undefined))
@@ -94,6 +99,27 @@ const textFor = async ($: EngineInterface): Promise<Strings> => TEXT[await langF
 
 // Failures go to the debug log only (claude --debug), never into the transcript.
 const debug = ($: EngineInterface, text: string) => $.ui.log(text, { to: 'debug' })
+
+// A path from a variable's value, with ~/ expanded
+const expandHome = async ($: EngineInterface, value: string | undefined) => {
+  const raw = (value ?? '').trim()
+  if (raw === '') return undefined
+  if (!raw.startsWith('~/')) return raw
+  const home = await $.env.get('HOME').catch(() => undefined)
+  return home === undefined ? raw : `${home}${raw.slice(1)}`
+}
+
+// The text of the file a variable names, trimmed and cut to EXTRA_TEXT_MAX; undefined when unset, missing or empty
+const fileTextOf = async ($: EngineInterface, name: string, value: string | undefined) => {
+  const path = await expandHome($, value)
+  if (path === undefined) return undefined
+  const text = await $.fs.read(path).catch(err => {
+    debug($, `${name}: ${path} not read: ${err}`)
+    return undefined
+  })
+  const trimmed = typeof text === 'string' ? text.trim().slice(0, EXTRA_TEXT_MAX) : ''
+  return trimmed === '' ? undefined : trimmed
+}
 
 // ───────────── context and repos ─────────────
 
@@ -280,7 +306,9 @@ const startRest = async ($: EngineInterface, kind: RestKind) => {
 const makeRecap = async ($: EngineInterface, forAt: number) => {
   const t = await textFor($)
   await update($, recap, () => ({ forAt, isReady: false, lines: [] }))
-  const reply = await $.model.fork({ prompt: t.recapAsk })
+  // HUD_RECAP_RULES: your own rules, added after the built-in ask
+  const rules = await fileTextOf($, 'HUD_RECAP_RULES', await $.env.get('HUD_RECAP_RULES').catch(() => undefined))
+  const reply = await $.model.fork({ prompt: rules === undefined ? t.recapAsk : `${t.recapAsk}\n${rules}` })
   const lines = reply.isAnswered ? parseRecap(reply.text, t) : []
   // You came back and started a new turn while it was being written: drop it
   const current = await read($, recap)
@@ -315,16 +343,31 @@ const doneSettingsOf = async ($: EngineInterface): Promise<DoneSettings> => {
 }
 
 // HUD_DONE_CMD names one executable (a path, ~/ allowed, or a name on PATH). It is never run through a shell.
-const doneCommandOf = async ($: EngineInterface) => {
-  const raw = ((await $.env.get('HUD_DONE_CMD').catch(() => undefined)) ?? '').trim()
-  if (raw === '') return undefined
-  if (!raw.startsWith('~/')) return raw
-  const home = await $.env.get('HOME').catch(() => undefined)
-  return home === undefined ? raw : `${home}${raw.slice(1)}`
+const doneCommandOf = async ($: EngineInterface) =>
+  expandHome($, await $.env.get('HUD_DONE_CMD').catch(() => undefined))
+
+const doneTimeoutMsOf = async ($: EngineInterface) => {
+  const s = Number(((await $.env.get('HUD_DONE_CMD_TIMEOUT').catch(() => undefined)) ?? '').trim())
+  return (Number.isInteger(s) && s >= 1 && s <= DONE_CMD_TIMEOUT_MAX_S ? s : DONE_CMD_TIMEOUT_S) * 1000
+}
+
+// HUD_DONE_EXTRA_ASK: after the note, fork once more with your own ask, followed by the replies already
+// handed on in this session so they are not repeated. Answers the reply, or undefined.
+const askExtra = async ($: EngineInterface, t: Strings) => {
+  const ask = await fileTextOf($, 'HUD_DONE_EXTRA_ASK', await $.env.get('HUD_DONE_EXTRA_ASK').catch(() => undefined))
+  if (ask === undefined) return undefined
+  const seen = await read($, doneExtraSeen)
+  const reply = await $.model.fork({ prompt: seen.length === 0 ? ask : `${ask}\n\n${t.extraSeen(seen)}` })
+  if (!reply.isAnswered) {
+    debug($, `HUD_DONE_EXTRA_ASK not answered: ${reply.reason}`)
+    return undefined
+  }
+  const text = reply.text.trim()
+  return text === '' ? undefined : text
 }
 
 // The recap says the session can be closed: fork once to ask what got done, write the note to
-// ~/.claude/hud/done-log/, then run HUD_DONE_CMD with the note's path as its one argument.
+// ~/.claude/hud/done-log/, then run HUD_DONE_CMD with the note's path (and the extra reply's, if any).
 // At most one note per absence.
 const logDone = async ($: EngineInterface, forAt: number, lines: string[], t: Strings) => {
   const next = lines.find(line => isNextLine(line, t))
@@ -355,16 +398,44 @@ const logDone = async ($: EngineInterface, forAt: number, lines: string[], t: St
   const path = `${home}/.claude/hud/done-log/${sessionId}-${stamp(forAt)}.md`
   await $.fs.write(path, entry)
 
+  const extra = await askExtra($, t)
+  const extraPath = extra === undefined ? undefined : path.replace(/\.md$/, '.extra.md')
+  if (extraPath !== undefined) await $.fs.write(extraPath, `${extra}\n`)
+  // Remember a reply once it is handed on: written with no command, or the command exited 0
+  const remember = async () => {
+    if (extra === undefined) return
+    await update($, doneExtraSeen, seen => keepRecent([...seen, extra]))
+  }
+
   const command = await doneCommandOf($)
-  if (command === undefined) return
-  // The path is its own argument; nothing is put into a shell string
-  const run = await $.process.run([command, path], { timeoutMs: DONE_CMD_TIMEOUT_MS }).catch(err => {
+  if (command === undefined) {
+    await remember()
+    return
+  }
+  // Each path is its own argument; nothing is put into a shell string
+  const argv = extraPath === undefined ? [command, path] : [command, path, extraPath]
+  const run = await $.process.run(argv, { timeoutMs: await doneTimeoutMsOf($) }).catch(err => {
     debug($, `HUD_DONE_CMD did not run: ${err}`)
     return undefined
   })
-  if (run !== undefined && run.exitCode !== 0) {
+  if (run === undefined) return
+  if (run.exitCode !== 0) {
     debug($, `HUD_DONE_CMD exited with ${run.exitCode}: ${run.stderr.slice(0, 200)}`)
+    return
   }
+  await remember()
+}
+
+// The newest replies whose total length fits EXTRA_TEXT_MAX
+const keepRecent = (texts: string[]) => {
+  const kept: string[] = []
+  let size = 0
+  for (const text of [...texts].reverse()) {
+    size += text.length
+    if (size > EXTRA_TEXT_MAX) break
+    kept.unshift(text)
+  }
+  return kept
 }
 
 const describeDoneLog = async ($: EngineInterface, t: Strings) =>

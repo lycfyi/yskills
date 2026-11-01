@@ -70,6 +70,15 @@ for three lines and writes them to `~/.claude/hud/done-log/<session>-<YYYYMMDD-H
 If `HUD_DONE_CMD` is set, it then runs that program once, with the note's path as its only argument.
 There is at most one note per absence.
 
+**Your own asks.** Two variables each name a text file whose words go to the model:
+
+- `HUD_RECAP_RULES`: added after the built-in recap ask, for rules of your own about the `Next` line
+  (for example: if someone else asked for the change, the next step is to ask whether to tell them).
+- `HUD_DONE_EXTRA_ASK`: after the done note, the HUD forks once more with this ask and writes the
+  reply beside the note as `<note>.extra.md`. `HUD_DONE_CMD` then gets that path as a second argument.
+  Replies already handed on in this session (the command exited 0) are listed after the ask, so the
+  model does not repeat them. Use it for a second log, such as changes that git does not show.
+
 ## The rest
 
 - **Progress tool.** The model gets a tool, `mcp__hud__progress`, and a short system-prompt section
@@ -108,7 +117,10 @@ Set these in your shell, or in the `env` block of `~/.claude/settings.json` or a
 | `HUD_LANG` | `zh` for Chinese | English |
 | `HUD_RESTS` | `on` for timed breaks | off; `/breathe`, `/eyes` and `/pushups` still start one by hand |
 | `HUD_DONE_LOG` | `on` to write done notes | off |
-| `HUD_DONE_CMD` | A program to run after each done note, for example `~/bin/post-note`. No shell, `~/` is expanded, 60 s limit. | none |
+| `HUD_DONE_CMD` | A program to run after each done note, for example `~/bin/post-note`. No shell, `~/` is expanded. | none |
+| `HUD_DONE_CMD_TIMEOUT` | Seconds `HUD_DONE_CMD` may run, 1 to 900 | 60 |
+| `HUD_RECAP_RULES` | A text file added to the recap ask, `~/` allowed | none |
+| `HUD_DONE_EXTRA_ASK` | A text file to ask after each done note (see above), `~/` allowed | none |
 | `HUD_WHATS_NEXT_COMMAND` | The command auto whats-next runs, with arguments, for example `/my-next --short` | found as above |
 
 A command's choice (`/breathe off`, `/autonext 5`, `/donelog on`) is stored for all sessions and wins
@@ -140,7 +152,8 @@ cat "$1" >> "$HOME/done.md"
   cache while that is still warm. Ten sessions left idle make ten calls.
 - **Auto whats-next:** one whats-next turn per absence, per session, even if you never come back. Turn
   it off with `/autonext off`.
-- **Done note:** one more forked call per closable absence, only when it is on.
+- **Done note:** one more forked call per closable absence, only when it is on; one more again with
+  `HUD_DONE_EXTRA_ASK`.
 - **Progress:** the tool and its prompt section (about 210 words) go with every request, in every
   session, `-p` included. Each step is one small tool call.
 - **Repo row:** `git rev-parse` and `git status` per repo, at the start and after edits.

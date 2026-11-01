@@ -102,6 +102,8 @@ declare module 'claude-code' {
       backgroundTasks: number[]
       // The turn end a done note was already written for; at most one note per absence
       doneLoggedFor: number | null
+      // Replies to HUD_DONE_EXTRA_ASK already handed on in this session, oldest first
+      doneExtraSeen: string[]
     }
   }
 }

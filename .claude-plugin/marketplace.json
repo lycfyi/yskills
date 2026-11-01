@@ -34,7 +34,7 @@
       "name": "hud",
       "source": "./mods/hud",
       "description": "A heads-up display above the prompt: context fill, repo state, turn progress with time estimates, a recap after you step away, auto whats-next, compaction notes, and optional breaks",
-      "version": "0.1.0",
+      "version": "0.2.0",
       "author": {
         "name": "lycfyi",
         "url": "https://github.com/lycfyi"
