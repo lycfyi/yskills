@@ -299,6 +299,7 @@ backup. Settings, in the `env` block or your shell:
 | --- | --- | --- |
 | `IDLE_RETURN_THRESHOLD` | `10800` | Seconds away before it fires; `0` turns it off |
 | `IDLE_RETURN_LANG` | `en` | `zh` writes the note in Chinese |
+| `IDLE_RETURN_STATE_DIR` | `~/.claude/state/idle-return` | One timestamp file per session. Ones older than 30 days are deleted; other files in the folder are left alone |
 
 It needs `jq`; without it, the hook does nothing.
 

@@ -2,7 +2,7 @@
   "name": "yskills",
   "displayName": "yskills",
   "description": "Skills for agents you leave and come back to: /whats-next and /human-context-rebuild re-orient you, /stale-check and /worktree-cleanup handle finished branches, /cold-read checks words before users see them, and the idle-return hook runs whats-next when you come back",
-  "version": "0.3.0",
+  "version": "0.3.1",
   "author": {
     "name": "lycfyi",
     "url": "https://github.com/lycfyi"

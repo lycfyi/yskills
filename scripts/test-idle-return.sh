@@ -77,5 +77,20 @@ check "a session id with a slash is ignored" "" "$out"
 out=$(printf 'not json' | "$HOOK" prompt; echo "rc=$?")
 check "bad input exits 0" "rc=0" "$out"
 
+# Cleanup on stop removes only the hook's own old timestamps (named by session id), and only at
+# the top of the state folder, so pointing IDLE_RETURN_STATE_DIR at a shared folder is safe.
+gone() { if [ ! -e "$T/state/$2" ]; then echo "ok   $1"; else echo "FAIL $1: $2 is still there"; fail=1; fi; }
+kept() { if [ -e "$T/state/$2" ]; then echo "ok   $1"; else echo "FAIL $1: $2 was deleted"; fail=1; fi; }
+OLD=11111111-2222-3333-4444-555555555555
+NEW=66666666-7777-8888-9999-000000000000
+mkdir -p "$T/state/sub"
+for f in "$OLD" notes.txt "sub/$OLD"; do echo 1 > "$T/state/$f"; touch -t 202001010000 "$T/state/$f"; done
+echo 1 > "$T/state/$NEW"
+input s11 "$T/plain.jsonl" | "$HOOK" stop >/dev/null
+gone "cleanup removes an old session timestamp" "$OLD"
+kept "cleanup keeps a recent session timestamp" "$NEW"
+kept "cleanup keeps an old file with another name" notes.txt
+kept "cleanup keeps an old file in a subfolder" "sub/$OLD"
+
 [ "$fail" = 0 ] && echo "all idle-return checks passed"
 exit "$fail"

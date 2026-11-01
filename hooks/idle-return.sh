@@ -10,7 +10,8 @@
 # Settings (environment):
 #   IDLE_RETURN_THRESHOLD   seconds away before the note fires; default 10800 (3 hours); 0 or off disables
 #   IDLE_RETURN_LANG        language of the note the agent reads: en (default) or zh
-#   IDLE_RETURN_STATE_DIR   where per-session timestamps live; default ~/.claude/state/idle-return
+#   IDLE_RETURN_STATE_DIR   where per-session timestamps live; default ~/.claude/state/idle-return.
+#                           Timestamps older than 30 days are deleted; other files there are left alone.
 #
 # Needs jq. Without jq it does nothing. It never blocks a prompt and always exits 0.
 set -u
@@ -65,8 +66,9 @@ already_shown() {
 case "$MODE" in
   stop)
     echo "$NOW" > "$STAMP"
-    # Timestamps of sessions untouched for 30 days are no longer useful.
-    find "$STATE_DIR" -type f -mtime +30 -delete 2>/dev/null
+    # Timestamps of sessions untouched for 30 days are no longer useful. Delete only our own
+    # files (named by session id) at the top of the folder: the folder can be a shared one.
+    find "$STATE_DIR" -maxdepth 1 -type f -name '????????-????-????-????-????????????' -mtime +30 -delete 2>/dev/null
     ;;
   prompt)
     if [ -f "$STAMP" ]; then
