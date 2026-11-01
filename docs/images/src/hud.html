@@ -1,0 +1,40 @@
+<!doctype html>
+<!-- The hud figure in the README: the rows above the prompt during a turn, and after you step away.
+     Row formats follow mods/hud/hooks/text.ts and register.tsx. Sample data. -->
+<meta charset="utf-8">
+<link rel="stylesheet" href="term.css">
+<style>
+  .win { width: 820px; }
+  .hr { display: block; overflow: hidden; color: var(--faint); }
+  .label { font: 600 13px -apple-system, 'Helvetica Neue', sans-serif; color: #8b949e; margin: 0 0 8px 2px; }
+  .label + .win { margin-top: 0; }
+  .win + .label { margin-top: 26px; }
+  .cursor { background: var(--fg); }
+</style>
+<div class="label">While it works</div>
+<div class="win">
+  <div class="bar"><span class="dot"></span><span class="dot"></span><span class="dot"></span><span class="title">shop-api — claude</span></div>
+<div class="body"><span class="green">⏺</span> <span class="b">Bash</span>(npm test -- upload)
+  <span class="dim">⎿  PASS  src/upload/retry.test.ts (12 tests)</span>
+
+✻ run the integration tests… <span class="dim">(41s · esc to interrupt)</span>
+
+<span class="dim">context </span><span class="green">⛁ ⛁ ⛁ ⛁ ⛀</span><span class="dim"> ⛶ ⛶ ⛶ ⛶ ⛶</span><span class="green"> 45%</span><span class="dim"> · 90k/200k · $3.12 · 5h 12% · 7d 31%</span>
+<span class="dim">repo    shop-api fix/upload-retry ↑2 · others 0 · mine 3</span>
+<span class="dim">task    </span>run the integration tests ▰▰▰▱▱ · est 12 min · 12:52
+<span class="hr">────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────</span>&gt; <span class="cursor"> </span>
+<span class="hr">────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────</span></div>
+</div>
+<div class="label">When you come back</div>
+<div class="win">
+  <div class="bar"><span class="dot"></span><span class="dot"></span><span class="dot"></span><span class="title">shop-api — claude</span></div>
+<div class="body">⏺ PR #57 is open and CI is running. I'll check it when you're back.
+
+<span class="dim">context </span><span class="green">⛁ ⛁ ⛁ ⛁ ⛀</span><span class="dim"> ⛶ ⛶ ⛶ ⛶ ⛶</span><span class="green"> 46%</span><span class="dim"> · 92k/200k · $3.20 · 5h 4% · 7d 31%</span>
+<span class="dim">repo    shop-api fix/upload-retry · clean</span>
+<span class="dim">recap   </span><span class="cyan">Goal: retry failed uploads with backoff</span>
+<span class="dim">        </span><span class="cyan">Last: PR #57 opened, CI was still running</span>
+<span class="dim">        </span><span class="inv-yellow"> Next </span><span class="yellow b"> Don't close: CI is still running on PR #57</span>
+<span class="hr">────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────</span>&gt; <span class="cursor"> </span>
+<span class="hr">────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────</span></div>
+</div>

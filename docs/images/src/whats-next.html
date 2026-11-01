@@ -1,0 +1,38 @@
+<!doctype html>
+<!-- Fig. 1 in the README: coming back to a session after three hours. Sample data. -->
+<meta charset="utf-8">
+<link rel="stylesheet" href="term.css">
+<style>
+  .win { width: 820px; }
+  .hr { display: block; overflow: hidden; color: var(--faint); }
+</style>
+<div class="win">
+  <div class="bar"><span class="dot"></span><span class="dot"></span><span class="dot"></span><span class="title">shop-api — claude</span></div>
+<div class="body"><span class="you">&gt; back from lunch, where are we? </span>
+
+<span class="green">⏺</span> <span class="b">Skill</span>(yskills:whats-next)
+  <span class="dim">⎿  Successfully loaded skill</span>
+
+<span class="green">⏺</span> <span class="b">Bash</span>(git status -sb &amp;&amp; gh pr checks 57)
+  <span class="dim">⎿  ## fix/upload-retry...origin/fix/upload-retry</span>
+<span class="dim">     ✓ unit   ✓ lint   ✓ integration    All checks were successful</span>
+
+⏺ ⚠️ <span class="b">Not yet — PR #57 passed CI but isn't merged, so nothing is on staging.</span>
+  This session: retry failed uploads with backoff in shop-api.
+  Last done: tests pass; PR #57 opened at 12:40, CI green at 12:58.
+  Not deployed: on staging, a slow upload still ends in "Upload failed".
+
+<span class="hr">────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────</span> <span class="chip"> ☐ Next step </span>
+
+ <span class="b">PR #57 is green. What next?</span>
+
+ <span class="pick">❯ 1. Merge, deploy to staging, then I test a slow upload (Recommended)</span>
+      <span class="dim">You get one screenshot of the retry working, or the error if it isn't.</span>
+   2. Ask Dana to review first
+      <span class="dim">PR #57 stays open; I post the review request.</span>
+   3. Leave it for now
+      <span class="dim">Nothing runs; PR #57 waits for you.</span>
+   4. Type something.
+
+ <span class="dim">Enter to select · ↑/↓ to navigate · Esc to cancel</span></div>
+</div>
