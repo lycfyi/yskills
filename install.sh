@@ -141,6 +141,9 @@ if [ ${#SKILLS[@]} -eq 0 ]; then
   SKILLS=("${ALL_SKILLS[@]}")
 else
   for s in "${SKILLS[@]}"; do
+    # A skill name is one folder name: no "/" and no leading ".", so "../x" can't reach
+    # outside the target directory (where --force would rm -rf it).
+    case "$s" in */*|.*|'') die "bad skill name: $s (use a name from: ${ALL_SKILLS[*]})" ;; esac
     [ -f "$SRC/$s/SKILL.md" ] || die "no such skill: $s (available: ${ALL_SKILLS[*]})"
   done
 fi

@@ -410,7 +410,9 @@ claude plugin validate mods/hud && claude plugin test mods/hud   # the HUD
 ```
 
 CI runs the spec validation, the hook checks, shellcheck and packaging on every push and pull
-request.
+request, plus a security workflow: gitleaks over the full history, zizmor on the workflows, and
+CodeQL on the TypeScript, Python and Actions code. `main` only takes pull requests, and all of
+these checks must pass first. See [SECURITY.md](SECURITY.md).
 
 If a change alters what a skill prints or how the HUD looks, update its figure in
 `docs/images/src/` and run `scripts/render-figures.sh` (needs Google Chrome and ImageMagick).
