@@ -4,6 +4,12 @@ A heads-up display for Claude Code, drawn above the prompt. It shows how full th
 of your repos, how far the current turn has got and how long it will take. When you step away and come
 back, it tells you where the session stopped and can run `/whats-next` for you.
 
+<p align="center">
+  <img src="../../docs/images/hud.png" width="867" alt="The HUD in two terminal windows. While it works: a context row with a bar of ten cells at 45 percent, tokens, cost and usage limits; a repo row with the branch, 2 commits ahead and 3 files changed by this session; a task row with the current step, 3 of 5 step cells filled and an estimate of 12 minutes, done at 12:52. When you come back: the same context and repo rows, then a three-line recap. Goal and Last are in cyan; the Next line has a yellow label and says: Don't close, CI is still running on PR #57.">
+  <br>
+  <sub>While the agent works, and when you come back. A sample session.</sub>
+</p>
+
 It follows the "dark cockpit" of Airbus ECAM displays: quiet while all is well. Yellow means late or
 near a limit, cyan means an action for you, green means the session can be closed.
 
