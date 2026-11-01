@@ -55,6 +55,8 @@ const en = {
   // Done note
   doneKey: { done: 'Done', status: 'Status', open: 'Left open' },
   noGoal: '(no goal given)',
+  extraSeen: (seen: readonly string[]) =>
+    ['Already handed on in this session; do not repeat these:', ...Array.from(seen, text => `---\n${text}`)].join('\n'),
   doneAsk: [
     "This session is done; write one entry for the user's done log.",
     'Based only on the conversation above, write the three lines below in English, with only facts the conversation shows (tool results, commits, PRs, deploys, checks). No heading, no markdown, no tool calls, nothing else.',
@@ -214,6 +216,7 @@ const zh: Strings = {
 
   doneKey: { done: '做完了', status: '状态', open: '留着的' },
   noGoal: '（没写目标）',
+  extraSeen: seen => ['这个 session 里已经交出去的，不要重复：', ...Array.from(seen, text => `---\n${text}`)].join('\n'),
   doneAsk: [
     '这个 session 做完了，要在操作者的收尾记录里记一条。',
     '只根据上面的对话，用中文写下面三行，只写对话里有证据的事实（工具结果、提交、PR、部署、核对）。不写标题，不用 markdown，不调用工具，不写别的。',

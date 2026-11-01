@@ -75,7 +75,7 @@ const ran = (stdout: string, exitCode = 0) => ({
   value: { exitCode, stdout, stderr: '', isStdoutTruncated: false, isStderrTruncated: false },
 })
 
-type Run = (argv: readonly string[]) => ReturnType<typeof ran>
+type Run = (argv: readonly string[], init?: { timeoutMs?: number }) => ReturnType<typeof ran>
 
 // The engine below the plugin: sessions and turns answer as usual, the spinner line is one text.
 // The default cwd is no git repo, so no repo row; tests about repos pass cwd and run.
@@ -90,7 +90,7 @@ const engine = (
   mock.store(on, { ...RECENT, ...store })
   on('session.start', (_, e) => ({ cwd: e.cwd }))
   on('session.cwd', () => ({ value: repo.cwd ?? '/r' }))
-  on('process.run', (_, e) => (repo.run ? repo.run(e.argv) : ran('', 128)))
+  on('process.run', (_, e) => (repo.run ? repo.run(e.argv, e.init) : ran('', 128)))
   on('session.surfaces', () => ({ value: ['terminal'] }))
   on('tool.register', (_, e) => ({ value: { tool: `mcp__hud__${e.name}` } }))
   on('command.register', (_, e) => ({ value: { command: e.name } }))
@@ -1297,10 +1297,13 @@ describe('done note', () => {
   const DONE_TEXT = 'Done: capped the payout (#312); new label (#689)\nStatus: deployed and verified\nLeft open: none'
 
   // The recap and the done note are two forks, told apart by their prompt; records what was written and run
-  const wire = (on: On, recapText: string) => {
+  // `other` answers any other fork it knows, such as the HUD_DONE_EXTRA_ASK one
+  const wire = (on: On, recapText: string, other?: (prompt: string) => string | undefined) => {
     const seen = { asks: [] as string[], writes: [] as { path: string; text: string }[] }
     on('model.fork', (_, e) => {
       seen.asks.push(e.prompt)
+      const answer = other?.(e.prompt)
+      if (answer !== undefined) return { value: { isAnswered: true, text: answer, usage: USAGE } }
       const isDone = e.prompt === en.doneAsk || e.prompt === zh.doneAsk
       const text = isDone ? (e.prompt === zh.doneAsk ? '做完了：修了估算（#312）\n状态：已上线并验证过\n留着的：无' : DONE_TEXT) : recapText
       return { value: { isAnswered: true, text, usage: USAGE } }
@@ -1390,6 +1393,80 @@ describe('done note', () => {
 
     const state = await $.command.run(command('', 'donelog'))
     expect(state.text).toContain('After each note: /home/my user/bin/post-note <note path>')
+  })
+
+  test('HUD_RECAP_RULES: the text of the file is added after the built-in recap ask', async ($, on) => {
+    const clock = engine(on, AUTO_OFF, {}, { ...ENV, HUD_RECAP_RULES: '~/my rules.md' })
+    const reads: string[] = []
+    on('fs.read', (_, e) => {
+      reads.push(e.path)
+      return { value: '\nNext: if someone else asked for the change, ask whether to tell them.\n' }
+    })
+    const seen = wire(on, 'Goal: A\nLast: B\nNext: run plugin test')
+    await $.session.start(START)
+    await $.turn.start({ text: 'change it', turnId: 't1' })
+    await $.turn.complete(DONE)
+    await clock.advance(25 * MIN)
+    expect(reads).toEqual(['/home/u/my rules.md'])
+    expect(seen.asks).toEqual([`${en.recapAsk}\nNext: if someone else asked for the change, ask whether to tell them.`])
+  })
+
+  test('HUD_DONE_EXTRA_ASK: one more fork after the note, its reply passed as the second argument', async ($, on) => {
+    const EXTRA = 'List what changed outside git, one JSON line each.'
+    const runs: string[][] = []
+    const limits: (number | undefined)[] = []
+    const run: Run = (argv, init) => {
+      if (argv[0] === 'git') return ran('', 128)
+      runs.push([...argv])
+      limits.push(init?.timeoutMs)
+      return ran('')
+    }
+    const env = { ...ENV, HUD_DONE_LOG: 'on', HUD_DONE_CMD: 'post-note', HUD_DONE_EXTRA_ASK: '/k/extra.md', HUD_DONE_CMD_TIMEOUT: '600' }
+    const clock = engine(on, AUTO_OFF, { run }, env)
+    on('fs.read', () => ({ value: EXTRA }))
+    let n = 0
+    const seen = wire(on, CLOSABLE, prompt => (prompt.startsWith(EXTRA) ? `{"what": "flag ${++n}"}` : undefined))
+    await $.session.start(START)
+    await $.turn.start({ text: 'change it', turnId: 't1' })
+    await $.turn.complete(DONE)
+    await clock.advance(20 * MIN + 10_000)
+
+    // Recap, done note, extra ask
+    expect(seen.asks.slice(-3)).toEqual([en.recapAsk, en.doneAsk, EXTRA])
+    const note = seen.writes[0]?.path ?? '?'
+    const extra = note.replace(/\.md$/, '.extra.md')
+    expect(seen.writes[1]).toEqual({ path: extra, text: '{"what": "flag 1"}\n' })
+    expect(runs).toEqual([['post-note', note, extra]])
+    expect(limits).toEqual([600_000])
+
+    // Next absence: the first reply is named as already handed on
+    await $.turn.start({ text: 'one more', turnId: 't2' })
+    await $.turn.complete({ ...DONE, turnId: 't2' })
+    await clock.advance(20 * MIN + 10_000)
+    expect(seen.asks.at(-1)).toBe(`${EXTRA}\n\n${en.extraSeen(['{"what": "flag 1"}'])}`)
+    expect(runs).toHaveLength(2)
+  })
+
+  test('a failing HUD_DONE_CMD: the extra reply is asked again next time; a bad timeout means 60 s', async ($, on) => {
+    const EXTRA = 'Extra ask'
+    const limits: (number | undefined)[] = []
+    const run: Run = (argv, init) => {
+      if (argv[0] === 'git') return ran('', 128)
+      limits.push(init?.timeoutMs)
+      return ran('', 1)
+    }
+    const env = { ...ENV, HUD_DONE_LOG: 'on', HUD_DONE_CMD: 'post-note', HUD_DONE_EXTRA_ASK: '/k/extra.md', HUD_DONE_CMD_TIMEOUT: '5000' }
+    const clock = engine(on, AUTO_OFF, { run }, env)
+    on('fs.read', () => ({ value: EXTRA }))
+    const seen = wire(on, CLOSABLE, prompt => (prompt.startsWith(EXTRA) ? 'row' : undefined))
+    await $.session.start(START)
+    for (const turnId of ['t1', 't2']) {
+      await $.turn.start({ text: 'change it', turnId })
+      await $.turn.complete({ ...DONE, turnId })
+      await clock.advance(20 * MIN + 10_000)
+    }
+    expect(seen.asks.filter(ask => ask.startsWith(EXTRA))).toEqual([EXTRA, EXTRA])
+    expect(limits).toEqual([60_000, 60_000])
   })
 
   test('a next step other than "Safe to close": no note', async ($, on) => {
