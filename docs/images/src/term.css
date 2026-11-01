@@ -1,0 +1,67 @@
+/* Shared look for the README figures: a dark terminal window on a transparent page.
+   Render a figure with scripts/render-figures.sh. */
+@font-face {
+  font-family: 'Fig Mono';
+  src: url('file:///System/Applications/Utilities/Terminal.app/Contents/Resources/Fonts/SF-Mono-Regular.otf');
+}
+@font-face {
+  font-family: 'Fig Mono';
+  font-weight: bold;
+  src: url('file:///System/Applications/Utilities/Terminal.app/Contents/Resources/Fonts/SF-Mono-Semibold.otf');
+}
+
+:root {
+  --bg: #15171c;
+  --bar: #1e2127;
+  --fg: #d8dbe1;
+  --dim: #7f8793;
+  --faint: #3c424c;
+  --green: #3fb950;
+  --yellow: #d6a23a;
+  --cyan: #45c4cf;
+  --pick: #e4e7ec;
+}
+
+* { box-sizing: border-box; }
+html, body { margin: 0; background: transparent; }
+body { padding: 28px 30px 36px; display: inline-block; }
+
+.win {
+  border-radius: 10px;
+  background: var(--bg);
+  box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.07), 0 8px 20px rgba(0, 0, 0, 0.22);
+  overflow: hidden;
+}
+.win + .win { margin-top: 22px; }
+
+.bar {
+  height: 30px;
+  background: var(--bar);
+  display: flex;
+  align-items: center;
+  padding: 0 12px;
+  gap: 7px;
+  color: var(--dim);
+  font: 12px -apple-system, 'Helvetica Neue', sans-serif;
+}
+.dot { width: 11px; height: 11px; border-radius: 50%; background: #3a3f48; }
+.title { flex: 1; text-align: center; margin-right: 47px; }
+
+.body {
+  padding: 14px 18px 16px;
+  white-space: pre;
+  color: var(--fg);
+  font: 13px/1.6 'Fig Mono', Menlo, 'DejaVu Sans Mono', monospace;
+}
+
+.dim { color: var(--dim); }
+.faint { color: var(--faint); }
+.b { font-weight: bold; }
+.green { color: var(--green); }
+.yellow { color: var(--yellow); }
+.cyan { color: var(--cyan); }
+.inv-yellow { background: var(--yellow); color: var(--bg); font-weight: bold; }
+.inv-green { background: var(--green); color: var(--bg); font-weight: bold; }
+.you { background: #22262d; }
+.chip { background: #2a2f37; color: var(--fg); }
+.pick { color: var(--pick); font-weight: bold; }

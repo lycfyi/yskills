@@ -1,7 +1,22 @@
+<div align="center">
+
 # yskills
 
 Agent Skills (plus one hook and one Claude Code mod) that I actually use, open-sourced one at a
 time.
+
+[![validate](https://github.com/lycfyi/yskills/actions/workflows/validate.yml/badge.svg)](https://github.com/lycfyi/yskills/actions/workflows/validate.yml)
+[![plugin version](https://img.shields.io/badge/dynamic/json?url=https%3A%2F%2Fraw.githubusercontent.com%2Flycfyi%2Fyskills%2Fmain%2F.claude-plugin%2Fplugin.json&query=%24.version&label=plugin&color=555)](.claude-plugin/plugin.json)
+[![Agent Skills format](https://img.shields.io/badge/format-Agent%20Skills-555)](https://agentskills.io)
+[![MIT license](https://img.shields.io/badge/license-MIT-555)](LICENSE)
+
+[Install](#install) · [The skills](#the-skills) · [idle-return](#the-hook-idle-return) · [hud](#the-mod-hud) · [Contributing](#contributing)
+
+<img src="docs/images/whats-next.png" width="867" alt="A Claude Code session after a three-hour break. The user types: back from lunch, where are we? The agent runs whats-next, checks git and the CI of PR #57, and answers first that the session can't be closed yet: PR #57 passed CI but isn't merged, so nothing is on staging. Three recap lines follow, then the next step as four clickable options; the first, recommended, is to merge, deploy to staging and test a slow upload.">
+
+<sub>Back after three hours: the agent runs <code>whats-next</code> before it answers. A sample session.</sub>
+
+</div>
 
 Most of them solve the same problem from different angles: **you run many agent sessions in
 parallel, you come back hours later, and every one of them greets you with a blank prompt** —
@@ -68,7 +83,10 @@ The HUD is a separate plugin in the same marketplace: `/plugin install hud@yskil
 
 Update later with `/plugin marketplace update yskills` then `/plugin update yskills`.
 
-### Claude Code — plain files
+### Other ways to install
+
+<details>
+<summary><b>Claude Code — plain files, no plugin</b></summary>
 
 If you'd rather not use plugins, drop the skill folders in and get the shorter
 `/whats-next` command:
@@ -94,7 +112,10 @@ mkdir -p ~/.claude/skills
 cp -r skills/* ~/.claude/skills/
 ```
 
-### Codex
+</details>
+
+<details>
+<summary><b>Codex</b></summary>
 
 Codex reads skills from `~/.agents/skills` (user level) and `.agents/skills` (repo level):
 
@@ -111,7 +132,10 @@ cp -r skills/* ~/.agents/skills/
 
 Restart Codex so it picks up the new skill metadata.
 
-### Claude.ai, Claude Desktop, Cowork, and cloud sessions
+</details>
+
+<details>
+<summary><b>Claude.ai, Claude Desktop, Cowork, and cloud sessions</b></summary>
 
 These don't read `~/.claude/skills` on your machine — you upload the skill to your account
 instead. Build the zips:
@@ -132,7 +156,10 @@ enabled on your account are what Cowork and scheduled cloud sessions load at ses
 All skills stick to the six spec-allowed frontmatter fields, so they upload without the
 `Unexpected key(s) in SKILL.md frontmatter` error that Claude Code-only fields cause.
 
-### Cursor, OpenCode, Goose, and other agents
+</details>
+
+<details>
+<summary><b>Cursor, OpenCode, Goose, and other agents</b></summary>
 
 ```bash
 ./install.sh --agent cursor        # ~/.cursor/skills
@@ -145,7 +172,10 @@ All skills stick to the six spec-allowed frontmatter fields, so they upload with
 For anything not in that list, check where your agent looks for skills and point `--dir` at
 it. The skill folders themselves are portable and need no changes.
 
-### Project-scoped install
+</details>
+
+<details>
+<summary><b>Project-scoped install</b></summary>
 
 To make the skills available to everyone working in one repo (and to Claude Code cloud
 sessions, which load skills committed to the cloned repository):
@@ -157,7 +187,10 @@ sessions, which load skills committed to the cloned repository):
 
 Then commit the result.
 
-### Uninstall
+</details>
+
+<details>
+<summary><b>Uninstall</b></summary>
 
 ```bash
 cd ~/.claude/skills && rm -rf whats-next human-context-rebuild stale-check worktree-cleanup cold-read
@@ -168,6 +201,8 @@ rm -rf ~/.claude/hooks/idle-return
 claude plugin uninstall yskills@yskills
 claude plugin marketplace remove yskills
 ```
+
+</details>
 
 ---
 
@@ -278,6 +313,12 @@ this?") hands the words to readers that never saw any of that:
 It returns one numbered list, so you can answer "1 fix, 2 skip, 3 your call". Each reader is one
 subagent; on the 27-item exam, one rubric review used about 130k tokens.
 
+<p align="center">
+  <img src="docs/images/cold-read.png" width="921" alt="Left: a 'Skip next week?' sheet from a made-up recipe-box app, with three phrases underlined and numbered: 'Tier 2 members get 4 skips per quarter.', 'Changes after the cutoff are processed in the next cycle.' and the 'Continue' button. Right: the cold-read hand-over in Claude Code. Two readers who never saw the chat found three problems; each comes with the quoted text, a rewrite and what the readers thought, for example that 'Continue' kept the box coming. It ends with: reply by number, 1 fix, 2 fix, 3 your call.">
+  <br>
+  <sub>A screen from a made-up recipe-box app, and what two cold readers made of it.</sub>
+</p>
+
 It ships with a calibration exam: two answer-keyed sets of copy. Set A was used to tune the
 rubric; set B is held out and only checks it. With the current rubric, one run caught 20 of 21
 problems in set A and 12 of 13 in set B, with no false alarms
@@ -310,6 +351,12 @@ your repos, the current step with a time estimate, and, after you step away, a t
 and an automatic `/whats-next`. Install it with `/plugin install hud@yskills`. Rows, settings
 and costs are in [`mods/hud/README.md`](mods/hud/README.md).
 
+<p align="center">
+  <img src="docs/images/hud.png" width="867" alt="The HUD in two terminal windows. While it works: a context row with a bar of ten cells at 45 percent, tokens, cost and usage limits; a repo row with the branch, 2 commits ahead and 3 files changed by this session; a task row with the current step, 3 of 5 step cells filled and an estimate of 12 minutes, done at 12:52. When you come back: the same context and repo rows, then a three-line recap. Goal and Last are in cyan; the Next line has a yellow label and says: Don't close, CI is still running on PR #57.">
+  <br>
+  <sub>The HUD while the agent works, and when you come back. A sample session.</sub>
+</p>
+
 ---
 
 ## Repo layout
@@ -335,11 +382,13 @@ yskills/
 ├── .claude-plugin/
 │   ├── plugin.json                # Claude Code plugin manifest
 │   └── marketplace.json           # marketplace catalog (this repo is its own marketplace)
+├── docs/images/                   # the README figures; src/ has the HTML they are drawn from
 ├── install.sh                     # cross-agent installer
 └── scripts/
     ├── validate.py                # Agent Skills spec validation
     ├── test-idle-return.sh        # checks for the idle-return hook
-    └── package.sh                 # build dist/*.zip for claude.ai upload
+    ├── package.sh                 # build dist/*.zip for claude.ai upload
+    └── render-figures.sh          # redraw docs/images/*.png from docs/images/src/
 ```
 
 ## Contributing
@@ -362,6 +411,9 @@ claude plugin validate mods/hud && claude plugin test mods/hud   # the HUD
 
 CI runs the spec validation, the hook checks, shellcheck and packaging on every push and pull
 request.
+
+If a change alters what a skill prints or how the HUD looks, update its figure in
+`docs/images/src/` and run `scripts/render-figures.sh` (needs Google Chrome and ImageMagick).
 
 ## License
 

@@ -1,0 +1,69 @@
+<!doctype html>
+<!-- The cold-read figure in the README: a screen from a made-up recipe-box app, and the findings.
+     Hand-over format follows skills/cold-read/SKILL.md section 4. Sample data. -->
+<meta charset="utf-8">
+<link rel="stylesheet" href="term.css">
+<style>
+  :root { --mark: #f0883e; }
+  .row { display: flex; gap: 26px; align-items: center; }
+  .win { width: 560px; }
+  .num { color: var(--mark); font-weight: bold; }
+
+  .sheet {
+    width: 290px;
+    background: #fff;
+    border-radius: 18px;
+    padding: 12px 24px 22px;
+    font: 15px/1.5 -apple-system, 'Helvetica Neue', sans-serif;
+    color: #1f2328;
+    box-shadow: 0 0 0 1px rgba(0, 0, 0, 0.08), 0 8px 20px rgba(0, 0, 0, 0.13);
+  }
+  .grip { width: 38px; height: 5px; border-radius: 3px; background: #d0d7de; margin: 0 auto 18px; }
+  .app { font-size: 12px; color: #6e7781; letter-spacing: 0.02em; margin-bottom: 4px; }
+  h1 { font-size: 21px; line-height: 1.25; margin: 0 0 12px; }
+  p { margin: 0 0 12px; color: #424a53; }
+  .flag { text-decoration: underline wavy var(--mark); text-decoration-thickness: 1.5px; text-underline-offset: 4px; }
+  sup { color: var(--mark); font-weight: 700; font-size: 11px; margin-left: 2px; }
+  .btn {
+    margin-top: 20px; display: flex; align-items: center; justify-content: center;
+    height: 46px; border-radius: 12px; background: #1f2328; color: #fff; font-weight: 600;
+  }
+  .btn sup { color: var(--mark); }
+  .cancel { text-align: center; margin-top: 12px; color: #57606a; font-weight: 500; }
+</style>
+<div class="row">
+  <div class="sheet">
+    <div class="grip"></div>
+    <div class="app">Pantry Box · Upcoming deliveries</div>
+    <h1>Skip next week?</h1>
+    <p>Skipping a week is free. <span class="flag">Tier 2 members get 4 skips per quarter.</span><sup>3</sup></p>
+    <p><span class="flag">Changes after the cutoff are processed in the next cycle.</span><sup>2</sup></p>
+    <div class="btn"><span class="flag">Continue</span><sup>1</sup></div>
+    <div class="cancel">Cancel</div>
+  </div>
+  <div class="win">
+    <div class="bar"><span class="dot"></span><span class="dot"></span><span class="dot"></span><span class="title">pantry-web — claude</span></div>
+<div class="body"><span class="you">&gt; /cold-read the "Skip next week?" sheet </span>
+
+⏺ Two readers who never saw this chat: the rubric
+  reviewer and a lazy first read. Three findings.
+
+  <span class="num">1.</span> <span class="b">"Continue"</span>
+     rewrite → "Skip the Nov 12 box"
+     <span class="dim">Both readers: the button hides what it does. The</span>
+     <span class="dim">lazy reader thought it kept the box coming.</span>
+
+  <span class="num">2.</span> <span class="b">"Changes after the cutoff are processed in</span>
+     <span class="b">the next cycle."</span>
+     rewrite → "Skip by Sun 11:59 pm to stop the
+     Nov 12 box."
+     <span class="dim">Both readers: no day, no time. They thought this</span>
+     <span class="dim">week's box might already be paid for.</span>
+
+  <span class="num">3.</span> <span class="b">"Tier 2 members get 4 skips per quarter."</span>
+     rewrite → "You have 3 skips left this quarter."
+     <span class="dim">Rubric: the sheet never says which tier you are.</span>
+
+  Reply by number: "1 fix, 2 fix, 3 your call".</div>
+  </div>
+</div>
