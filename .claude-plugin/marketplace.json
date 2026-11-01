@@ -10,7 +10,7 @@
       "name": "yskills",
       "source": "./",
       "description": "Session re-orientation, branch staleness and cleanup, and cold reads: /whats-next, /human-context-rebuild, /stale-check, /worktree-cleanup, /cold-read, plus the idle-return hook",
-      "version": "0.3.0",
+      "version": "0.3.1",
       "author": {
         "name": "lycfyi",
         "url": "https://github.com/lycfyi"
