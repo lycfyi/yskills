@@ -12,6 +12,7 @@ import {
   breathBar,
   estimateFinish,
   factorOf,
+  ratioOf,
   pickDue,
   restAt,
 } from '../hooks/pace.ts'
@@ -156,10 +157,12 @@ describe('estimates', () => {
     expect(estimateFinish(p, T0)).toBe(T0 + 10 * MIN)
   })
 
-  test('halfway, the pace and the estimate weigh the same', () => {
-    // 2 steps in 4 minutes: by pace 4 more (T0+8); by the estimate T0+10; half and half is T0+9
+  test('halfway, the pace counts a quarter; near the end, most', () => {
+    // 2 of 4 steps in 4 minutes: by pace T0+8, by the estimate T0+10; a quarter and three quarters is T0+9.5
     const p = plan({ done: 2, guessAt: T0, guessMs: 10 * MIN })
-    expect(estimateFinish(p, T0 + 4 * MIN)).toBe(T0 + 9 * MIN)
+    expect(estimateFinish(p, T0 + 4 * MIN)).toBe(T0 + 9.5 * MIN)
+    // 3 of 4 in 6 minutes: by pace T0+8; 9/16 of that and 7/16 of T0+10 is T0+8.875
+    expect(estimateFinish({ ...p, done: 3 }, T0 + 6 * MIN)).toBe(T0 + 8.875 * MIN)
   })
 
   test('with no minutes given, the pace alone', () => {
@@ -184,7 +187,10 @@ describe('estimates', () => {
   test('fewer than 3 past ratios change nothing; then the median counts', () => {
     expect(factorOf([3, 3])).toBe(1)
     expect(factorOf([1, 2, 5])).toBe(2)
-    expect(factorOf([0.1, 0.1, 0.1])).toBe(0.5)
+    expect(factorOf([0.2, 0.25, 0.3])).toBe(0.25)
+    expect(factorOf([0.05, 0.05, 0.05])).toBe(0.1)
+    expect(ratioOf(1 * MIN, 20 * MIN)).toBe(0.05)
+    expect(ratioOf(1 * MIN, 100 * MIN)).toBe(0.05)
   })
 })
 
@@ -324,6 +330,37 @@ describe('progress and breaks', () => {
     expect(commands.map(c => c.name)).toEqual(['breathe', 'eyes', 'pushups', 'autonext', 'donelog'])
     expect(tools[0]?.description).toContain('向操作者报告')
     expect(commands.every(c => CJK.test(c.description))).toBe(true)
+  })
+
+  test('only a turn with every step done is learned from', async ($, on) => {
+    // Two past ratios: not enough yet, so estimates are taken as given
+    const clock = engine(on, { ratios: [0.25, 0.25] })
+    await $.session.start(START)
+    const shows = async (text: RegExp) => {
+      const band = await $.ui.mount({ ...BAND, surface: 'terminal' })
+      const found = await band.find({ type: 'Text', text })
+      await band.unmount()
+      return found !== undefined
+    }
+
+    // Stopped at 1 of 3: not learned from, so the next estimate is still taken as given
+    await $.turn.start({ text: 'change it', turnId: 't1' })
+    await $.tool.call({ tool: TOOL, done: 0, total: 3, minutes: 20 })
+    await clock.advance(MIN)
+    await $.tool.call({ tool: TOOL, done: 1, total: 3 })
+    await $.turn.complete(DONE)
+
+    await $.turn.start({ text: 'go on', turnId: 't2' })
+    await $.tool.call({ tool: TOOL, done: 0, total: 3, minutes: 20 })
+    expect(await shows(/▱▱▱ · est 20 min/)).toBe(true)
+    // This one finishes: a third ratio, and the median 0.25 now scales estimates to a quarter
+    await clock.advance(MIN)
+    await $.tool.call({ tool: TOOL, done: 3, total: 3 })
+    await $.turn.complete({ ...DONE, turnId: 't2' })
+
+    await $.turn.start({ text: 'and more', turnId: 't3' })
+    await $.tool.call({ tool: TOOL, done: 0, total: 3, minutes: 20 })
+    expect(await shows(/▱▱▱ · est 5 min/)).toBe(true)
   })
 
   test('a past habit of estimating half the time doubles the next estimate', async ($, on) => {
