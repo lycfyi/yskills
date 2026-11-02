@@ -492,7 +492,13 @@ const checkAutoNext = async ($: EngineInterface, now: number) => {
   const settings = await autoSettingsOf($)
   if (!settings.isOn || last === null || now - last < settings.minutes * MINUTE) return
   const state = await read($, autoNext)
-  if (!state.isArmed || state.forAt === last) return
+  if (state.forAt === last) return
+  // whats-next was shown already and you have not typed since: it does not run again, but the recap
+  // still shows. checkAway leaves the recap to this function, so without it nothing would show at all.
+  if (!state.isArmed) {
+    if ((await read($, recap))?.forAt !== last) await makeRecap($, last).catch(() => undefined)
+    return
+  }
   if (await isBusyInBackground($, now)) return
   // A half-typed prompt: leave it alone
   if ((await $.prompt.read()).text.trim() !== '') return

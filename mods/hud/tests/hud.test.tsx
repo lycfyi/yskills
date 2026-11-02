@@ -1206,6 +1206,30 @@ describe('whats-next after you step away', () => {
     expect(sent).toEqual([])
   })
 
+  test('after a typed /whats-next and a picked option, the recap still shows when you step away; whats-next does not run again', async ($, on) => {
+    const clock = engine(on)
+    const { sent, asks } = box(on)
+    on('tool.call', () => ({ result: 'ok' }))
+    await $.session.start(START)
+
+    // You type /whats-next and pick an option; the work it starts ends in the same turn
+    await $.prompt.submit({ text: '/whats-next', origin: { kind: 'composer' }, wait: false })
+    await $.turn.start({ text: '/whats-next', turnId: 't1' })
+    await $.tool.call({ tool: 'AskUserQuestion', questions: [] })
+    await $.tool.call({ tool: 'Bash', command: 'git commit' })
+    await $.turn.complete(DONE)
+
+    await clock.advance(10 * MIN + 10_000)
+    const band = await $.ui.mount({ ...IDLE, surface: 'terminal' })
+    expect(await band.find({ type: 'Text', text: 'Goal: rework auto whats-next' })).toBeDefined()
+    await band.unmount()
+
+    // Once per absence, and whats-next is not run for you
+    await clock.advance(30 * MIN)
+    expect(asks).toHaveLength(1)
+    expect(sent).toEqual([])
+  })
+
   test('the plugin names count as shown too: a typed /yskills:whats-next and the Skill tool with yskills:whats-next', async ($, on) => {
     const clock = engine(on)
     const { sent } = box(on, { commands: ['yskills:whats-next'] })
