@@ -554,9 +554,10 @@ const onTick = async ($: EngineInterface) => {
   await startRest($, kind)
 }
 
-// After a turn that answered normally, record how far off the estimate was; later estimates use the median.
+// After a turn that answered normally with every step done, record how far off the estimate was; later
+// estimates use the median. A turn that stopped part way would count a short run against a whole estimate.
 const calibrate = async ($: EngineInterface, p: Plan) => {
-  if (p.guessAt === undefined || p.rawGuessMs === undefined || p.rawGuessMs < 30_000 || p.done === 0) return
+  if (p.guessAt === undefined || p.rawGuessMs === undefined || p.rawGuessMs < 30_000 || p.done < p.total) return
   const actual = (await $.clock.now()) - p.guessAt
   const ratios = [...(await ratiosOf($)), ratioOf(actual, p.rawGuessMs)].slice(-MAX_RATIOS)
   await $.store.set('ratios', ratios).catch(() => undefined)
