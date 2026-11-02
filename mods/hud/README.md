@@ -44,7 +44,8 @@ undeployed change counts as a next step. Only finished, verified work gets `Safe
 
 **Auto whats-next.** After the recap, it runs `/whats-next` once, as if you had typed it. It waits
 while a turn is running, a background task has not reported back, a subagent is running, or the prompt
-holds a draft. After one run it waits until you type something yourself.
+holds a draft. After one run it waits until you type something yourself. A `/whats-next` you typed counts
+as a run. While it waits, the recap still shows after each absence.
 
 It picks the command in this order:
 
