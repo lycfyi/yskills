@@ -50,6 +50,26 @@
         "progress",
         "mod"
       ]
+    },
+    {
+      "name": "session-sync",
+      "source": "./mods/session-sync",
+      "description": "Several sessions on one topic see each other's decisions: each session records what you decided, and your next message in another session on that topic carries it",
+      "version": "0.1.0",
+      "author": {
+        "name": "lycfyi",
+        "url": "https://github.com/lycfyi"
+      },
+      "homepage": "https://github.com/lycfyi/yskills/tree/main/mods/session-sync",
+      "repository": "https://github.com/lycfyi/yskills",
+      "license": "MIT",
+      "category": "productivity",
+      "tags": [
+        "session",
+        "worktree",
+        "decisions",
+        "mod"
+      ]
     }
   ]
 }

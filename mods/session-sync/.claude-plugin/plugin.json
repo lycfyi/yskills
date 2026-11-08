@@ -1,0 +1,12 @@
+{
+  "name": "session-sync",
+  "version": "0.1.0",
+  "description": "Several sessions on one topic see each other's decisions: each session records what the person decided, and the next prompt in another session on that topic carries it",
+  "author": {
+    "name": "lycfyi",
+    "url": "https://github.com/lycfyi"
+  },
+  "homepage": "https://github.com/lycfyi/yskills/tree/main/mods/session-sync",
+  "repository": "https://github.com/lycfyi/yskills",
+  "license": "MIT"
+}
