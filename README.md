@@ -41,6 +41,7 @@ Also in this repo, for Claude Code only:
 | --- | --- | --- |
 | [`idle-return`](#the-hook-idle-return) | hook | After you have been away for 3 hours, the agent runs `whats-next` before it answers your next message |
 | [`hud`](mods/hud/README.md) | mod | A heads-up display above the prompt: context fill, repo state, turn progress with time estimates, and after you step away a recap plus an automatic `/whats-next` |
+| [`session-sync`](mods/session-sync/README.md) | mod | Several sessions on one topic see each other's decisions at your next message; `/converge` lists where they disagree |
 
 **Which one do I want?** `human-context-rebuild` tells you where you are; `whats-next` tells
 you where you are *and* hands you the next move as clickable options (plus a verdict on
@@ -407,6 +408,7 @@ python3 scripts/validate.py      # spec compliance
 claude plugin validate .         # plugin + marketplace manifests
 scripts/test-idle-return.sh      # the idle-return hook
 claude plugin validate mods/hud && claude plugin test mods/hud   # the HUD
+claude plugin validate mods/session-sync && claude plugin test mods/session-sync
 ```
 
 CI runs the spec validation, the hook checks, shellcheck and packaging on every push and pull
