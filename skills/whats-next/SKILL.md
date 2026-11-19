@@ -2,8 +2,9 @@
 name: whats-next
 description: >-
   Re-orient the user after they return to a session — or after they open a FRESH
-  context pointed at a worktree/branch — and let them decide the next step by
-  answering lightweight structured questions (Yes/No, A/B/C/D via
+  context pointed at a worktree/branch — lead with what only the user can unblock,
+  ranked, and let them decide the next step by answering lightweight structured
+  questions (Yes/No, A/B/C/D via
   AskUserQuestion) instead of facing a blank prompt. Trigger when the user invokes
   /whats-next (optionally naming a worktree, branch, or repo path), or asks
   "接下来做什么", "下一步是什么", "我该做什么", "这个 worktree/分支做到哪了、下一步呢",
@@ -22,6 +23,11 @@ license: MIT
 The user runs many sessions in parallel and comes back after hours away. They cannot
 remember where this conversation stands. The job: rebuild the state FOR them, then hand
 them a small set of concrete, clickable decisions — never a blank prompt to fill in.
+
+**The user's attention is the scarcest input.** Every session is waiting on the agent or
+on the user. What the user most needs on return is the short list of things only they can
+unblock — put it at the top, ranked, and spend the question slots on it. Work the agent
+can do alone is not asked about; it is announced and done.
 
 Match the language of the conversation. Every word the user sees follows it: the recap,
 the questions, the option labels and their descriptions. An English recap in a Chinese
@@ -47,6 +53,9 @@ Two invocation shapes, same downstream flow:
     task/handoff doc that scopes this work (a handoff doc in the repo, the PR
     description, an issue-tracker ticket named in commits), and recent-commit
     trailers that record acceptance/deploy state.
+  - Also look for things waiting on the user: draft PRs or PR comments that ask for
+    their go-ahead, handoff-doc lines marked open / to decide / waiting on the user,
+    drafts (messages, posts, emails) saved but not sent.
   - The mapping: committed-and-merged-and-deployed → DONE; merged but not deployed →
     merged-not-deployed (NOT done); committed on branch but not merged →
     done-but-not-landed; uncommitted diff → in flight; task-doc items with no
@@ -81,12 +90,32 @@ From the evidence source chosen above, determine:
 - What is BLOCKED and on what — especially things blocked on the user's own decision.
 - What was PLANNED but not started.
 
+Then sort every open item by **who must act next**:
+
+- **Needs the user** — only they can move it:
+  - a go-ahead they reserved for themselves: merge, deploy, production writes, sending
+    or posting anything outward, spending money, a design or copy sign-off;
+  - a judgment with no safe default (business, pricing, wording only they can write);
+  - access the agent lacks: a login, a secret, a 2FA code, a device, a physical action,
+    a person only they can contact;
+  - a check only they can reach (see the verification SOP in step 2);
+  - a question from an earlier turn that they never answered.
+- **The agent can do it** — everything else, including reversible work that follows
+  from the original request, polling, verifying what the agent can reach, and writing
+  results to files. These never become questions.
+
+Rank the "needs the user" items: first what blocks the most other work, then anything
+with a deadline or something that expires (a token, a hold, a review window), then
+irreversible or outward-facing steps, then the rest. A decision the user already made
+in this conversation is not open — act on it.
+
 Trust the conversation record over memory of intent: if a step was described but no tool
 call shows it happened, it did not happen.
 
-### 2. Brief recap first (3–5 lines, no more)
+### 2. Brief recap first (3–5 lines, plus one line per item that needs the user)
 
-Before asking anything, print a tight orientation so the choices make sense:
+Before asking anything, print a tight orientation so the choices make sense. Order:
+verdict, then what needs the user, then the state lines.
 
 - **First line, always: the close-session verdict.** State plainly whether this session
   can be closed right now — "✅ 可以关：没有在跑的任务，成果都已落盘" or
@@ -99,6 +128,18 @@ Before asking anything, print a tight orientation so the choices make sense:
   If closing loses nothing, say so explicitly — permission to close is the answer the
   user most often needs. If not closable, name the single cheapest action that would
   make it closable (e.g. "把结论写进 handoff 文档就能关").
+- **Second, always: what needs the user.** Start with the count — "需要你的有 2 件" or
+  "没有要你做的事". Then one line per item, in the rank order from step 1:
+  where it came from (which PR, message, doc, or earlier turn), one clause of
+  background, what exactly they must do, and what it unblocks. Write a decision as a
+  concrete example with real names and numbers, not as an abstract policy question.
+  An item the questions in step 4 will cover still gets its line here, so the user
+  sees the whole list before the dialog opens. Show at most 5; if there are more,
+  say how many more and that they come next round.
+  For access items (a login, a secret, a device), give the exact step: the command,
+  the URL, the account. These usually cannot be options; they are instructions.
+- **Third: what the agent will do on its own** — one line, "我接下来自己做：…", for
+  the agent-doable items. No question about them.
 - One line: what this session is about.
 - One line: last completed milestone.
 - One line, whenever code is involved: deploy status in plain words — "已部署到
@@ -128,7 +169,9 @@ for the decision stay out.
 
 ### 3. Identify the REAL fork points
 
-List the decisions that actually determine what happens next. Good fork points:
+List the decisions that actually determine what happens next. The "needs the user"
+items from step 1 come first, in their rank order; a fork about agent-only work gets a
+slot only if a slot is left over. Good fork points:
 
 - "Deploy now vs. run acceptance first" (if the repo has a deploy or release skill, the
   deploy option runs it) — and when code is merged but not deployed,
@@ -144,10 +187,15 @@ Not fork points (never ask these):
 - Anything already decided earlier in the conversation — don't re-litigate.
 - Fake choices where every option means "continue" — collapse them.
 - Permission-seeking for reversible work that follows from the original request.
+- "Should I do X?" where X is agent-doable — announce it in the recap and do it.
 
 ### 4. Ask via AskUserQuestion
 
-One single AskUserQuestion call, 1–3 questions max, batched together. Rules for options:
+One single AskUserQuestion call, 1–3 questions max, batched together. The questions go
+to the top-ranked "needs the user" items. If more than 3 such decisions exist, ask the
+top 3 now and say in the recap that the rest come after. Each question must stand on
+its own in the dialog: name the item, its source, and what the answer unblocks. Rules
+for options:
 
 - 2–4 options, each a concrete action phrased so that clicking it is sufficient — the
   user should never need to type a follow-up for the option to be executable.
@@ -165,14 +213,21 @@ One single AskUserQuestion call, 1–3 questions max, batched together. Rules fo
 ### 5. Act immediately
 
 After the user answers, execute the chosen option without re-confirming. The whole point
-is that one click resumes the work. If the chosen path later hits a genuine new fork,
-ask again — same lightweight format.
+is that one click resumes the work. Also start the agent-doable items announced in the
+recap; if one does not depend on the answers, start it in the same turn as the
+questions. If the chosen path later hits a genuine new fork, ask again — same
+lightweight format. When the work comes back to a point that needs the user, say so
+first in that reply, not at the end of a long report.
 
 ## Edge cases
 
 - **Nothing pending, task complete** (which for code means deployed, or confirmed
   no deploy needed): say so in two lines, then ask one question offering
   plausible follow-ups (including "结束，没别的了").
+- **Nothing needs the user, but work remains**: say "没有要你做的事" on the second
+  line, name what the agent does next, and do it. Ask a question only if there is a real
+  fork the user would care about; otherwise end the reply with when the user is needed
+  next (e.g. "合并前会再找你").
 - **Everything blocked on external waits**: report what is being waited on and expected
   timing; ask whether to poll now, switch to other work (offer specific candidates), or
   leave it.
