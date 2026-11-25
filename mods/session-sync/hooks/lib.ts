@@ -162,6 +162,7 @@ export const buildContext = (
   seen: Seen,
   now: number,
   fileWindowMs: number,
+  listTopics = true,
 ): Built => {
   const mine = joinedBy(entries, me)
   const topics = topicsOf(entries)
@@ -212,7 +213,7 @@ export const buildContext = (
     }
   }
 
-  if (mine.size === 0) {
+  if (listTopics && mine.size === 0) {
     const unseen = [...topics.values()]
       .filter(t => !seen.listed.includes(t.topic))
       .sort((a, b) => b.lastAt - a.lastAt)
@@ -322,4 +323,14 @@ export const GUIDE = [
   '- 用户在本会话里拍板、推翻、或者在选择题里选定了一件事，而本会话跟着话题：调用 mcp__session-sync__decision 记一行，写定了什么和他的原话。agent 自己的提议用 kind=proposed。',
   '- 用户发话时，带 [session-sync] 的上下文是别的会话的新决定。照里面的要求对照，有不一致先告诉他。',
   '- 用户说「收敛一下 <话题>」或用 /converge：调用 mcp__session-sync__read 读全部记录，列三组（一致的、不一致的、只在一个会话里谈过的），不一致的每条用选择题问他，最后用 kind=converged 记下结论，再照仓库规则写决策记录或记忆。',
+].join('\n')
+
+// SESSION_SYNC_AUTO=0: the model calls the tools only when the person asks in so many words
+export const MANUAL_GUIDE = [
+  '# 跨会话对齐（session-sync，手动）',
+  '只在用户明说时调用 session-sync 的工具，不要自己判断该不该跟话题、该不该记：',
+  '- 用户说「跟上 <话题>」「这个会话属于 <话题>」：调用 mcp__session-sync__topic。',
+  '- 用户说「记一下」「记到 <话题>」：调用 mcp__session-sync__decision，写定了什么和他的原话。',
+  '- 用户说「收敛一下 <话题>」或用 /converge：调用 mcp__session-sync__read 读全部记录，列三组（一致的、不一致的、只在一个会话里谈过的），不一致的每条用选择题问他，最后用 kind=converged 记下结论。',
+  '- 用户发话时带 [session-sync] 的上下文，是本会话跟着的话题上别的会话的新决定，或别的会话改了同一个文件。照里面的要求对照，有不一致先告诉他。',
 ].join('\n')

@@ -5,6 +5,7 @@ import {
   type Entry,
   FIRST_MAX,
   GUIDE,
+  MANUAL_GUIDE,
   type Kind,
   QUOTE_MAX,
   SAID_MAX,
@@ -71,6 +72,7 @@ const baseName = (p: string) => p.replace(/\/+$/, '').split('/').at(-1) ?? p
 // This session's own state. Starts over on a reload; session.start reads the log back.
 const S: {
   isOn: boolean
+  auto: boolean
   me: Me | undefined
   myLog: string
   first: string | undefined
@@ -78,7 +80,7 @@ const S: {
   myFiles: Set<string>
   box: Box | undefined
   wake: { cancel: () => void } | undefined
-} = { isOn: false, me: undefined, myLog: '', first: undefined, turn: undefined, myFiles: new Set(), box: undefined, wake: undefined }
+} = { isOn: false, auto: true, me: undefined, myLog: '', first: undefined, turn: undefined, myFiles: new Set(), box: undefined, wake: undefined }
 
 // ---- inbox: one state per session (inbox.ts) ----
 const boxPath = (m: Me, id = m.id) => `${m.dir}/inbox/${id}.json`
@@ -212,6 +214,8 @@ export const register: Register = on => {
     if (!S.isOn) return started
     try {
       const home = await $.env.get('HOME')
+      // SESSION_SYNC_AUTO=0 (settings.json env): no topic list, no auto-join guide, no fallback fork
+      S.auto = (await $.env.get('SESSION_SYNC_AUTO').catch(() => undefined))?.trim() !== '0'
       const id = await $.session.id()
       const cwd = await $.session.cwd()
       const repo = await $.session.repo().catch(() => null)
@@ -304,7 +308,7 @@ export const register: Register = on => {
   on('prompt.compose', async ($, e, next) => {
     const composed = await next(e)
     if (!S.isOn || S.me === undefined || !e.tools.includes(TOOL.topic)) return composed
-    return { sections: [...composed.sections, { id: 'session-sync:guide', text: GUIDE, scope: 'session' as const }] }
+    return { sections: [...composed.sections, { id: 'session-sync:guide', text: S.auto ? GUIDE : MANUAL_GUIDE, scope: 'session' as const }] }
   })
 
   on('prompt.submit', async ($, e, next) => {
@@ -327,7 +331,7 @@ export const register: Register = on => {
       const mine = joinedBy(entries, m.id)
       for (const topic of mine) await append($, m, { kind: 'said', topic, text: clip(e.text, SAID_MAX) })
       const seen = await readSeen($, m)
-      const built = buildContext(entries, m.id, seen, await $.clock.now(), FILE_WINDOW_MS)
+      const built = buildContext(entries, m.id, seen, await $.clock.now(), FILE_WINDOW_MS, S.auto)
       if (JSON.stringify(built.seen) !== JSON.stringify(seen)) await $.fs.write(seenPath(m), JSON.stringify(built.seen))
       if (built.text !== undefined) return next({ ...e, context: [...(e.context ?? []), built.text] })
     } catch (err) {
@@ -416,7 +420,7 @@ export const register: Register = on => {
     }
     if (m === undefined || e.agentId !== undefined || t === undefined) return result
     S.turn = undefined
-    if (e.reason !== 'answer' || t.decided || !(t.asked || looksDecided(t.human))) return result
+    if (!S.auto || e.reason !== 'answer' || t.decided || !(t.asked || looksDecided(t.human))) return result
     $.clock.after(0, () => {
       void fallback($, m).catch(err => debug($, `fallback failed: ${err}`))
     })

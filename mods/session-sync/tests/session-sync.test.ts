@@ -158,9 +158,13 @@ describe('small parts', () => {
 const HOME = '/home/u'
 const DIR = `${HOME}/.claude/session-sync`
 
-const engine = (on: On, files: Map<string, string>, opts: { isFork?: string; onFork?: () => void; answer?: string; registerThrows?: boolean } = {}) => {
+const engine = (
+  on: On,
+  files: Map<string, string>,
+  opts: { isFork?: string; onFork?: () => void; answer?: string; registerThrows?: boolean; env?: Record<string, string> } = {},
+) => {
   const clock = mock.clock(on, { now: T0 })
-  mock.env(on, { HOME })
+  mock.env(on, { HOME, ...opts.env })
   on('session.start', (_, e) => ({ cwd: e.cwd }))
   on('session.id', () => ({ value: A }))
   on('session.cwd', () => ({ value: '/wt/sc-a' }))
@@ -305,6 +309,46 @@ describe('in a session', () => {
     await $.turn.complete({ reason: 'answer', answer: 'ok', durationMs: 1000, isAborted: false, turnId: 't2' })
     await clock.advance(1000)
     expect(forks).toBe(0)
+  })
+
+  test('SESSION_SYNC_AUTO=0: no topic list, a manual guide, no fork; joined topics still carry news', async ($, on) => {
+    const files = new Map<string, string>()
+    files.set(`${DIR}/log/${B}.jsonl`, lines(join(B, 'pricing', T0 - HOUR, '新功能的定价')))
+    let forks = 0
+    const clock = engine(on, files, { env: { SESSION_SYNC_AUTO: '0' }, onFork: () => (forks += 1) })
+    const seen: string[][] = []
+    on('prompt.submit', (_, e) => {
+      seen.push([...(e.context ?? [])])
+      return { text: e.text }
+    })
+    on('prompt.compose', () => ({ sections: [] }))
+    await $.session.start(START)
+
+    const composed = await $.prompt.compose({
+      model: 'claude-opus-5-5',
+      promptModel: 'claude-opus-5-5',
+      surfaces: ['terminal'],
+      outputStyle: null,
+      traits: [],
+      tools: ['mcp__session-sync__topic'],
+    })
+    expect(composed.sections.at(-1)?.text).toContain('只在用户明说时调用')
+    expect(composed.sections.at(-1)?.text).not.toContain('明显会和别的会话撞上')
+
+    await $.prompt.submit({ ...SAY, text: 'hi' })
+    expect(seen.at(-1)).toEqual([])
+
+    // The person asks to join; later news on that topic still rides the next prompt
+    await $.tool.call({ tool: 'mcp__session-sync__topic', topic: 'pricing' })
+    await $.prompt.submit({ ...SAY, text: '选 B' })
+    await $.turn.complete({ reason: 'answer', answer: 'ok', durationMs: 1000, isAborted: false, turnId: 't1' })
+    await clock.advance(1000)
+    expect(forks).toBe(0)
+
+    files.set(`${DIR}/log/${B}.jsonl`, (files.get(`${DIR}/log/${B}.jsonl`) ?? '') + lines(decided(B, 'pricing', T0 + 2 * MIN, '月费 $9')))
+    await clock.advance(2 * MIN)
+    await $.prompt.submit({ ...SAY, text: '接着写' })
+    expect(seen.at(-1)?.join('\n')).toContain('月费 $9')
   })
 
   test('a non-interactive session takes no part', async ($, on) => {
