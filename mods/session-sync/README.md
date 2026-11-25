@@ -67,6 +67,17 @@ Each session also has one state, in `~/.claude/session-sync/inbox/<session>.json
 longest first, each with its place, last line and `claude --resume <id>`; then the snoozed ones and
 the ones still working. Done sessions are only counted.
 
+## Manual mode: no automatic calls
+
+Set `SESSION_SYNC_AUTO=0` (for example in the `env` block of `~/.claude/settings.json`) and start a
+new session. Then:
+
+- the prompt no longer lists the active topics, and the system-prompt section tells the model to
+  call the tools only when you ask in so many words ("跟上 <topic>", "记一下", "收敛一下 <topic>");
+- no fork runs after a turn to record a decision that nobody recorded;
+- what stays: decisions from other sessions on topics this session joined, other sessions' edits to
+  the same files, `/converge`, and the inbox (`/done`, `/snooze`, `/inbox`).
+
 ## What it does not do
 
 - Sessions from `claude -p` and the SDK (cron jobs among them) take no part.
